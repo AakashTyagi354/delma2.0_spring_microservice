@@ -1,0 +1,32 @@
+
+
+
+
+server:
+  port: 8010
+
+spring:
+  application:
+    neame: doctorservice
+  datasource:
+    url: jdbc:postgresql://localhost:5432/delma_doctor_db
+    username: aakashtyagi
+    password: Hardik@2001
+    driver-class-name: org.postgresql.Driver
+  security:
+    user:
+      name: admin
+      password: admin123
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        format_sql: true
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+    show-sql: true
+
+
+jwt:
+  secret: Z0ZqQm1nQ0tZQ1N2R3p3VjVnQ0hFZ3pMZ1R2aD...
