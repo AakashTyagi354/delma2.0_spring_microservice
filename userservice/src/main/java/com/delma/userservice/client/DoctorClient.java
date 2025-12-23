@@ -9,8 +9,8 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @FeignClient(
-        name = "doctor-service",
-        url = "http://localhost:8002"
+        name = "doctorservice",
+        url = "http://localhost:8010"
 )
 public interface DoctorClient {
     @PutMapping("/api/v1/doctor/approve/{doctorId}")
@@ -21,6 +21,10 @@ public interface DoctorClient {
 
     @GetMapping("/api/v1/doctor/pending")
     List<DoctorResponseDTO> getPendingApplications(@RequestHeader("Authorization") String token);
+
+
+    @GetMapping("/api/v1/doctor/all")
+    List<DoctorResponseDTO> getAllDoctors(@RequestHeader("Authorization") String token);
 
 
 

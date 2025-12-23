@@ -40,6 +40,7 @@ public class JwtAuthFilter extends OncePerRequestFilter {
         log.info("JWT Filter hit for URI: {}", request.getRequestURI());
         String headers = request.getHeader("Authorization");
         if (headers == null || !headers.startsWith("Bearer ")) {
+            System.out.println("No JWT token found in request headers");
             filterChain.doFilter(request, response);
             return;
         }
@@ -56,6 +57,7 @@ public class JwtAuthFilter extends OncePerRequestFilter {
 //                new UsernamePasswordAuthenticationToken(userId, null, authorities);
 //        SecurityContextHolder.getContext().setAuthentication(authenticationToken);
 
+        System.out.println("Roles from token: " + roles);
         List<SimpleGrantedAuthority> authorities = roles.stream()
                 .map(r -> new SimpleGrantedAuthority("ROLE_" + r))
                 .toList();
@@ -67,9 +69,10 @@ public class JwtAuthFilter extends OncePerRequestFilter {
         SecurityContextHolder.getContext().setAuthentication(authenticationToken);
 
 // Now continue the filter chain
+        System.out.println("Authorities: " + SecurityContextHolder.getContext().getAuthentication());
         filterChain.doFilter(request, response);
 
-        System.out.println("Authorities: " + SecurityContextHolder.getContext().getAuthentication());
+
 
     }
 }

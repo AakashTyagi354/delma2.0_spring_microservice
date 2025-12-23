@@ -62,4 +62,13 @@ public class DoctorServiceImpl implements DoctorService {
     public List<Doctor> getPendingApplications() {
         return doctorRepository.findAllByStatus(ApplicationStatus.PENDING);
     }
+
+    @Override
+    public List<Doctor> getAllDoctors() {
+        List<Doctor> allApprovedDoctors = doctorRepository.findAllByStatus(ApplicationStatus.APPROVED);
+        if (allApprovedDoctors != null) {
+            return allApprovedDoctors;
+        }
+        return List.of();
+    }
 }

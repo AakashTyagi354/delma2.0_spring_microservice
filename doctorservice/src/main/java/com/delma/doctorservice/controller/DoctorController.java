@@ -4,6 +4,7 @@ import com.delma.doctorservice.dto.DoctorApplicationRequest;
 import com.delma.doctorservice.entity.Doctor;
 import com.delma.doctorservice.service.DoctorService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Component;
@@ -11,6 +12,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+@Slf4j
 @RestController
 @RequestMapping("/api/v1/doctor")
 @RequiredArgsConstructor
@@ -46,5 +48,11 @@ public class DoctorController {
     @GetMapping("/pending")
     public ResponseEntity<List<Doctor>> pendingApplications() {
         return ResponseEntity.ok(doctorService.getPendingApplications());
+    }
+
+    @GetMapping("/all")
+    public ResponseEntity<List<Doctor>> getAllDoctors() {
+        log.info("Fetching all approved doctors");
+        return ResponseEntity.ok(doctorService.getAllDoctors());
     }
 }
