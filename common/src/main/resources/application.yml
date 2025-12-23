@@ -1,0 +1,29 @@
+server:
+  port: 8087
+
+spring:
+  application:
+    name: api-gateway
+
+  cloud:
+    gateway:
+      routes:
+        - id: userservice
+          uri: http://localhost:8011
+          predicates:
+            - Path=/auth/**
+
+        - id: doctorservice
+          uri: http://localhost:8010
+          predicates:
+            - Path=/api/v1/doctor/**
+
+
+jwt:
+  secret: Z0ZqQm1nQ0tZQ1N2R3p3VjVnQ0hFZ3pMZ1R2aD...
+
+logging:
+  level:
+    org.springframework.cloud.gateway: DEBUG
+
+
