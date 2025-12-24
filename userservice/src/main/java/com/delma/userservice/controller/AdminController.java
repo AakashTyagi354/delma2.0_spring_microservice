@@ -13,7 +13,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/v1/admin")
-@PreAuthorize("hasRole('ADMIN')")
+//@PreAuthorize("hasRole('ADMIN')")
 @RequiredArgsConstructor
 public class AdminController {
     private final DoctorClient doctorClient;
@@ -23,10 +23,10 @@ public class AdminController {
     @PutMapping("/approve-doctors/{doctorId}")
     public ResponseEntity<Void> approveDoctor(@PathVariable String doctorId) {
         // Extract JWT token from incoming request
-        String token = request.getHeader("Authorization");
+
 
         // Forward token to Doctor MS
-        doctorClient.approveDoctor(doctorId, token);
+        doctorClient.approveDoctor(doctorId);
 
         return ResponseEntity.ok().build();
     }
@@ -36,16 +36,16 @@ public class AdminController {
     // Reject doctor application
     @PostMapping("/reject-doctors/{doctorId}")
     public ResponseEntity<String> rejectDoctor(@PathVariable String doctorId) {
-        String token = request.getHeader("Authorization");
-        String res = doctorClient.rejectApplication(Long.valueOf(doctorId), token);
+//        String token = request.getHeader("Authorization");
+        String res = doctorClient.rejectApplication(Long.valueOf(doctorId));
         return ResponseEntity.ok(res);
     }
 
     // Get all pending doctor applications
     @GetMapping("/pending-doctors")
     public ResponseEntity<List<DoctorResponseDTO>> getPendingDoctors() {
-        String token = request.getHeader("Authorization");
-        List<DoctorResponseDTO> pending = doctorClient.getPendingApplications(token);
+//        String token = request.getHeader("Authorization");
+        List<DoctorResponseDTO> pending = doctorClient.getPendingApplications();
         return ResponseEntity.ok(pending);
     }
 

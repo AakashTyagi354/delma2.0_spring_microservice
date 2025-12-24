@@ -51,8 +51,8 @@ public class UserController {
     @GetMapping("/doctors")
     public ResponseEntity<List<DoctorResponseDTO>> getAllDoctors(){
         log.info("Fetching all approved doctors");
-        String token = request.getHeader("Authorization");
-        List<DoctorResponseDTO> allApprovedDoctors = doctorClient.getAllDoctors(token);
+//        String token = request.getHeader("Authorization");
+        List<DoctorResponseDTO> allApprovedDoctors = doctorClient.getAllDoctors();
         return ResponseEntity.ok(allApprovedDoctors);
     }
 }

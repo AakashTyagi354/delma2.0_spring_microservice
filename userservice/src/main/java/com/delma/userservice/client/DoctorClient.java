@@ -14,17 +14,17 @@ import java.util.List;
 )
 public interface DoctorClient {
     @PutMapping("/api/v1/doctor/approve/{doctorId}")
-    void approveDoctor(@PathVariable String doctorId, @RequestHeader("Authorization") String token);
+    void approveDoctor(@PathVariable String doctorId);
 
     @PostMapping("/api/v1/doctor/reject/{id}")
-    String rejectApplication(@PathVariable Long id, @RequestHeader("Authorization") String token);
+    String rejectApplication(@PathVariable Long id);
 
     @GetMapping("/api/v1/doctor/pending")
-    List<DoctorResponseDTO> getPendingApplications(@RequestHeader("Authorization") String token);
+    List<DoctorResponseDTO> getPendingApplications();
 
 
     @GetMapping("/api/v1/doctor/all")
-    List<DoctorResponseDTO> getAllDoctors(@RequestHeader("Authorization") String token);
+    List<DoctorResponseDTO> getAllDoctors();
 
 
 

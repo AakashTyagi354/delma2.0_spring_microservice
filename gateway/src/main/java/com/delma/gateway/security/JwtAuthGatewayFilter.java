@@ -1,5 +1,4 @@
-package com.delma.common.security;
-
+package com.delma.gateway.security;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

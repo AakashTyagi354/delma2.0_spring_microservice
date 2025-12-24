@@ -39,6 +39,7 @@
 	<modules>
 
 		<module>doctorservice</module>
+		<module>apigateway</module>
 		<module>userservice</module>
 		<module>appointmentservice</module>
 		<module>productservice</module>
@@ -48,7 +49,7 @@
 		<module>notificationservice</module>
 
 		<!-- Shared Libs -->
-		<module>common</module>
+		<module>apigateway</module>
 
 	</modules>
 

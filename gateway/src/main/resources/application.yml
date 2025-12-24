@@ -1,9 +1,9 @@
 server:
-  port: 8087
+  port: 8089
 
 spring:
   application:
-    name: api-gateway
+    name: gateway
 
   cloud:
     gateway:
@@ -11,7 +11,7 @@ spring:
         - id: userservice
           uri: http://localhost:8011
           predicates:
-            - Path=/auth/**
+            - Path=/api/v1/**, /auth/**, /api/users/**
 
         - id: doctorservice
           uri: http://localhost:8010
@@ -25,5 +25,3 @@ jwt:
 logging:
   level:
     org.springframework.cloud.gateway: DEBUG
-
-

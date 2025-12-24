@@ -1,10 +1,10 @@
-package com.delma.common;
+package com.delma.gateway;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 
 @SpringBootTest
-class CommonApplicationTests {
+class GatewayApplicationTests {
 
 	@Test
 	void contextLoads() {

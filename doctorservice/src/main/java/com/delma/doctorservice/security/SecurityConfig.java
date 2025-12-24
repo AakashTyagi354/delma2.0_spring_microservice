@@ -24,12 +24,7 @@ public class SecurityConfig {
                         session -> session.sessionCreationPolicy((SessionCreationPolicy.STATELESS))
                 )
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/v1/doctor/apply").hasRole("USER")
-                        .requestMatchers("/api/v1/doctor/all").hasRole("USER")
-                        .requestMatchers("/api/v1/doctor/approve/**",
-                                "/api/v1/doctor/reject/**",
-                                "/api/v1/doctor/pending").hasRole("ADMIN")
-                        .anyRequest().authenticated()
+                        .anyRequest().permitAll() // gateway already secured
                 );
 
         http.addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);

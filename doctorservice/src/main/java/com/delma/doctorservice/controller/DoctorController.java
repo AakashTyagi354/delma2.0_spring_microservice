@@ -29,7 +29,7 @@ public class DoctorController {
     }
 
     // Admin endpoints
-    @PreAuthorize("hasRole('ADMIN')")
+//    @PreAuthorize("hasRole('ADMIN')")
     @PutMapping("/approve/{id}")
     public ResponseEntity<String> approve(@PathVariable Long id) {
         doctorService.approveApplication(id);

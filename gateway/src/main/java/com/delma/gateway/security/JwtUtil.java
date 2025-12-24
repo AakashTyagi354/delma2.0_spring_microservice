@@ -1,4 +1,4 @@
-package com.delma.common.security;
+package com.delma.gateway.security;
 
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
