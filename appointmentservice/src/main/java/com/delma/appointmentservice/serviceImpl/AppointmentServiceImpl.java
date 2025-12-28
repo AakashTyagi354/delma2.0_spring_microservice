@@ -8,12 +8,14 @@ import com.delma.appointmentservice.service.AppointmentService;
 import com.delma.appointmentservice.utility.AppointmentStatus;
 import com.delma.appointmentservice.utility.SlotStatus;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class AppointmentServiceImpl implements AppointmentService {
@@ -43,6 +45,7 @@ public class AppointmentServiceImpl implements AppointmentService {
 
 
     public List<DoctorSlot> getAvailableSlots(Long doctorId, LocalDate date) {
+        log.info("Fetching available slots for doctorId: {} on date: {}", doctorId, date);
         return slotRepository.findByDoctorIdAndDateAndStatus(doctorId, date, SlotStatus.AVAILABLE);
     }
 
