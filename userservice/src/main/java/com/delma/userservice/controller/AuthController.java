@@ -3,6 +3,7 @@ package com.delma.userservice.controller;
 import com.delma.userservice.dto.LoginRequestDTO;
 import com.delma.userservice.dto.LoginResponseDTO;
 import com.delma.userservice.dto.SignupResponseDTO;
+import com.delma.userservice.response.ApiResponse;
 import com.delma.userservice.security.AuthService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -21,24 +22,39 @@ public class AuthController {
     private final AuthService authService;
 
     @PostMapping("/login")
-    public ResponseEntity<LoginResponseDTO> login(@RequestBody LoginRequestDTO loginRequest) {
+    public ResponseEntity<ApiResponse<LoginResponseDTO>> login(@RequestBody LoginRequestDTO loginRequest) {
         // Implement login logic here
 
-        return ResponseEntity.ok(authService.login(loginRequest));
+        return ResponseEntity.ok(
+                ApiResponse.success(
+                        authService.login(loginRequest),
+                        "Login successful"
+                )
+        );
     }
 
     @PostMapping("/signup")
-    public ResponseEntity<SignupResponseDTO> signUp(@RequestBody LoginRequestDTO signupRequestDTO) {
+    public ResponseEntity<ApiResponse<SignupResponseDTO>> signUp(@RequestBody LoginRequestDTO signupRequestDTO) {
         // Implement login logic here
 
-        return ResponseEntity.ok(authService.signup(signupRequestDTO));
+        return ResponseEntity.ok(
+                ApiResponse.success(
+                        authService.signup(signupRequestDTO),
+                        "Signup successful"
+                )
+        );
     }
 
     @PostMapping("/admin-login")
-    public ResponseEntity<LoginResponseDTO> adminLogin(@RequestBody LoginRequestDTO loginRequest) throws AccessDeniedException {
+    public ResponseEntity<ApiResponse<LoginResponseDTO>> adminLogin(@RequestBody LoginRequestDTO loginRequest) throws AccessDeniedException {
         // Implement admin login logic here
 
-        return ResponseEntity.ok(authService.adminLogin(loginRequest));
+        return ResponseEntity.ok(
+                ApiResponse.success(
+                        authService.adminLogin(loginRequest),
+                        "Admin login successful"
+                )
+        );
     }
 
 }

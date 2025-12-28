@@ -1,5 +1,6 @@
 package com.delma.userservice.exception;
 
+import com.delma.userservice.response.ApiResponse;
 import jakarta.validation.ConstraintViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -51,22 +52,34 @@ public class GlobalExceptionHandler {
 
     /* ================= BUSINESS ================= */
 
-    @ExceptionHandler(BusinessException.class)
-    public ResponseEntity<ApiError> handleBusinessException(BusinessException ex) {
-        return buildError(ex.getMessage(), HttpStatus.BAD_REQUEST);
+    @ExceptionHandler(ResourceNotFoundException.class)
+    public ResponseEntity<ApiResponse<?>> handleNotFound(ResourceNotFoundException ex) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(ApiResponse.failure(ex.getMessage(), "USER_NOT_FOUND"));
     }
 
+    @ExceptionHandler(BusinessException.class)
+    public ResponseEntity<ApiResponse<?>> handleBusiness(BusinessException ex) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(ApiResponse.failure(ex.getMessage(), ex.getErrorCode()));
+    }
+
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<ApiResponse<?>> handleGeneric(Exception ex) {
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(ApiResponse.failure("Something went wrong", "INTERNAL_ERROR"));
+    }
     /* ================= GENERIC ================= */
 
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<ApiError> handleIllegalArgument(IllegalArgumentException ex) {
         return buildError(ex.getMessage(), HttpStatus.BAD_REQUEST);
     }
-
-    @ExceptionHandler(Exception.class)
-    public ResponseEntity<ApiError> handleGeneric(Exception ex) {
-        return buildError("Internal server error", HttpStatus.INTERNAL_SERVER_ERROR);
-    }
+//
+//    @ExceptionHandler(Exception.class)
+//    public ResponseEntity<ApiError> handleGeneric(Exception ex) {
+//        return buildError("Internal server error", HttpStatus.INTERNAL_SERVER_ERROR);
+//    }
 
     /* ================= UTIL ================= */
 
