@@ -28,6 +28,11 @@ spring:
           predicates:
             - Path=/api/v1/category/**
 
+        - id: productservice
+          uri: http://localhost:8016
+          predicates:
+            - Path=/api/v1/product/**
+
 
 
 

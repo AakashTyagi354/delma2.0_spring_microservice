@@ -8,10 +8,12 @@ import com.delma.categoryservice.repository.CategoryRepository;
 import com.delma.categoryservice.service.CategoryService;
 import com.delma.categoryservice.util.SlugUtil;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class CategoryServiceImpl implements CategoryService {
@@ -44,6 +46,7 @@ public class CategoryServiceImpl implements CategoryService {
 
     @Override
     public CategoryResponse getBySlug(String slug) {
+        log.info("Looking for category with slug: {}", slug);
         return repository.findBySlugAndIsActiveTrue(slug)
                 .map(this::map)
                 .orElseThrow(() -> new RuntimeException("Category not found"));

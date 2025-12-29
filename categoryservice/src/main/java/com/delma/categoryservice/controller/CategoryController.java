@@ -6,12 +6,14 @@ import com.delma.categoryservice.dto.CategoryResponse;
 import com.delma.categoryservice.service.CategoryService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+@Slf4j
 @RestController
 @RequestMapping("/api/v1/category")
 @RequiredArgsConstructor
@@ -31,6 +33,7 @@ public class CategoryController {
 
     @GetMapping("/{slug}")
     public ResponseEntity<CategoryResponse> getBySlug(@PathVariable String slug) {
+        log.info("Fetching category with slug: {}", slug);
         return ResponseEntity.ok(categoryService.getBySlug(slug));
     }
 }
