@@ -23,6 +23,12 @@ spring:
           predicates:
             - Path=/api/v1/slots/**, /api/v1/appointments/**
 
+        - id: categoryservice
+          uri: http://localhost:8015
+          predicates:
+            - Path=/api/v1/category/**
+
+
 
 
 jwt:
