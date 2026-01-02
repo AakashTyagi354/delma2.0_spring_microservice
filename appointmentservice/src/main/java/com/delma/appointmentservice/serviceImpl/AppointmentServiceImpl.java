@@ -2,6 +2,8 @@ package com.delma.appointmentservice.serviceImpl;
 
 import com.delma.appointmentservice.entity.Appointment;
 import com.delma.appointmentservice.entity.DoctorSlot;
+import com.delma.appointmentservice.kafka.NotificationEvent;
+import com.delma.appointmentservice.kafka.NotificationProducer;
 import com.delma.appointmentservice.repository.AppointmentRepository;
 import com.delma.appointmentservice.repository.DoctorSlotRepository;
 import com.delma.appointmentservice.service.AppointmentService;
@@ -21,6 +23,7 @@ import java.util.List;
 public class AppointmentServiceImpl implements AppointmentService {
     private final AppointmentRepository appointmentRepository;
     private final DoctorSlotRepository slotRepository;
+    private final NotificationProducer notificationProducer;
 
     public Appointment bookAppointment(Long userId,Long doctorId,Long slotId){
         DoctorSlot slot = slotRepository.findById(slotId)
@@ -38,9 +41,18 @@ public class AppointmentServiceImpl implements AppointmentService {
                 .build();
 
         slot.setStatus(SlotStatus.BOOKED);
+
         slotRepository.save(slot);
 
-        return appointmentRepository.save(appointment);
+        Appointment bookedAppointmnet = appointmentRepository.save(appointment);
+        NotificationEvent event = new NotificationEvent(
+                bookedAppointmnet.getUserId().toString(),
+                "Appointment Booked Successfully",
+                "Congratulations! Your appointment has been booked successfully with the doctor.",
+                "Appointment Service"
+        );
+        notificationProducer.send(event);
+        return bookedAppointmnet;
     }
 
 
