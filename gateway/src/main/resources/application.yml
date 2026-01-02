@@ -32,6 +32,12 @@ spring:
           uri: http://localhost:8016
           predicates:
             - Path=/api/v1/product/**
+        - id: notificationservice
+          uri: http://localhost:8017
+          predicates:
+            - Path=/api/v1/notifications/**
+
+
 
 
 

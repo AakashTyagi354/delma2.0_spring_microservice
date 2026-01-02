@@ -4,6 +4,8 @@ import com.delma.doctorservice.Enum.ApplicationStatus;
 import com.delma.doctorservice.client.UserServiceClient;
 import com.delma.doctorservice.dto.DoctorApplicationRequest;
 import com.delma.doctorservice.entity.Doctor;
+import com.delma.doctorservice.kafka.NotificationEvent;
+import com.delma.doctorservice.kafka.NotificationProducer;
 import com.delma.doctorservice.repository.DoctorRepository;
 import com.delma.doctorservice.service.DoctorService;
 import jakarta.servlet.http.HttpServletRequest;
@@ -19,6 +21,7 @@ public class DoctorServiceImpl implements DoctorService {
     private final DoctorRepository doctorRepository;
     private final UserServiceClient userServiceClient;
     private final HttpServletRequest request;
+    private final NotificationProducer notificationProducer;
 
 
     public void submitApplication(String userId, DoctorApplicationRequest request) {
@@ -50,6 +53,14 @@ public class DoctorServiceImpl implements DoctorService {
         String token = request.getHeader("Authorization");
         // optionally call User MS to update ROLE_USER -> ROLE_DOCTOR
         userServiceClient.addDoctorRole(app.getUserId(),token);
+
+        NotificationEvent event = new NotificationEvent(
+                app.getUserId().toString(),
+                "Doctor Application Approved",
+                "Congratulations! Your application to become a doctor has been approved.",
+                "Doctor"
+        );
+        notificationProducer.send(event);
     }
 
     public void rejectApplication(Long applicationId) {
