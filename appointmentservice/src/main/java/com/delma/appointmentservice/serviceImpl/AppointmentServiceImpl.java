@@ -6,6 +6,7 @@ import com.delma.appointmentservice.kafka.NotificationEvent;
 import com.delma.appointmentservice.kafka.NotificationProducer;
 import com.delma.appointmentservice.repository.AppointmentRepository;
 import com.delma.appointmentservice.repository.DoctorSlotRepository;
+import com.delma.appointmentservice.response.ApiResponse;
 import com.delma.appointmentservice.service.AppointmentService;
 import com.delma.appointmentservice.utility.AppointmentStatus;
 import com.delma.appointmentservice.utility.SlotStatus;
@@ -25,7 +26,7 @@ public class AppointmentServiceImpl implements AppointmentService {
     private final DoctorSlotRepository slotRepository;
     private final NotificationProducer notificationProducer;
 
-    public Appointment bookAppointment(Long userId,Long doctorId,Long slotId){
+    public Appointment bookAppointment(Long userId, Long doctorId, Long slotId){
         DoctorSlot slot = slotRepository.findById(slotId)
                 .orElseThrow(() -> new RuntimeException("Slot not found"));
 
@@ -52,6 +53,7 @@ public class AppointmentServiceImpl implements AppointmentService {
                 "Appointment Service"
         );
         notificationProducer.send(event);
+
         return bookedAppointmnet;
     }
 

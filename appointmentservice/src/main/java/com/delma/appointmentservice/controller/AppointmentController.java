@@ -2,10 +2,12 @@ package com.delma.appointmentservice.controller;
 
 import com.delma.appointmentservice.entity.Appointment;
 import com.delma.appointmentservice.entity.DoctorSlot;
+import com.delma.appointmentservice.response.ApiResponse;
 import com.delma.appointmentservice.service.AppointmentService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
@@ -27,10 +29,13 @@ public class AppointmentController {
         }
 
         @PostMapping("/book")
-        public Appointment bookAppointment(@RequestParam Long userId,
-                                           @RequestParam Long doctorId,
-                                           @RequestParam Long slotId){
-                return appointmentService.bookAppointment(userId,doctorId,slotId);
+        public ResponseEntity<ApiResponse<Appointment>> bookAppointment(@RequestParam Long userId,
+                                                                       @RequestParam Long doctorId,
+                                                                       @RequestParam Long slotId){
+                Appointment app = appointmentService.bookAppointment(userId,doctorId,slotId);
+                return ResponseEntity.ok(
+                        ApiResponse.success(app, "Appointment booked successfully")
+                );
         }
 
         @GetMapping("/user")

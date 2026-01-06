@@ -3,31 +3,68 @@ package com.delma.userservice.controller;
 import com.delma.userservice.dto.LoginRequestDTO;
 import com.delma.userservice.dto.LoginResponseDTO;
 import com.delma.userservice.dto.SignupResponseDTO;
+import com.delma.userservice.entity.RefreshToken;
+import com.delma.userservice.entity.User;
+import com.delma.userservice.reposistory.UserReposistory;
 import com.delma.userservice.response.ApiResponse;
+import com.delma.userservice.response.AuthTokenResponse;
 import com.delma.userservice.security.AuthService;
+import com.delma.userservice.security.AuthUtil;
+import com.delma.userservice.service.RefreshTokenService;
+import com.delma.userservice.service.UserService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.nio.file.AccessDeniedException;
 
+@Slf4j
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/auth")
 public class AuthController {
 
     private final AuthService authService;
+    private RefreshTokenService refreshTokenService;
+    private UserService userService;
+    private UserReposistory userReposistory;
+    private AuthUtil authUtil;
 
     @PostMapping("/login")
     public ResponseEntity<ApiResponse<LoginResponseDTO>> login(@RequestBody LoginRequestDTO loginRequest) {
         // Implement login logic here
+        LoginResponseDTO loginResponse = authService.login(loginRequest);
+        log.info("User {} logged in successfully", loginRequest.getEmail());
+        ResponseCookie cookie = ResponseCookie.from("refreshToken", loginResponse.getRefreshToken())
+                .httpOnly(true)
+                .secure(true)
+                .path("/")
+                .maxAge(7 * 24 * 60 * 60)
+                .sameSite("Strict")
+                .build();
 
-        return ResponseEntity.ok(
-                ApiResponse.success(
-                        authService.login(loginRequest),
-                        "Login successful"
-                )
+        // IMPORTANT: Do NOT send refreshToken in body
+        LoginResponseDTO safeResponse = new LoginResponseDTO(
+                loginResponse.getJwtToken(),
+                loginResponse.getUserId(),
+                loginResponse.getRole(),
+                loginResponse.getIsAdmin(),
+                loginResponse.getUsername(),
+                null
         );
+
+        return ResponseEntity.ok()
+                .header(HttpHeaders.SET_COOKIE, cookie.toString())
+                .body(
+                        ApiResponse.success(
+                                safeResponse,
+                                "Login successful"
+                        )
+                );
     }
 
     @PostMapping("/signup")
@@ -51,6 +88,31 @@ public class AuthController {
                 ApiResponse.success(
                         authService.adminLogin(loginRequest),
                         "Admin login successful"
+                )
+        );
+    }
+
+    @PostMapping("/refresh")
+    public ResponseEntity<ApiResponse<AuthTokenResponse>> refresh(
+            @CookieValue(name = "refreshToken", required = false) String refreshToken) {
+
+        if (refreshToken == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(ApiResponse.failure("Refresh token is missing", "AUTH_401"));
+        }
+
+        RefreshToken storedToken = refreshTokenService.validate(refreshToken);
+
+        User user = userReposistory
+                .findById(storedToken.getUserId())
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        String newAccessToken = authUtil.generateAccessToken(user);
+
+        return ResponseEntity.ok(
+                ApiResponse.success(
+                        new AuthTokenResponse(newAccessToken),
+                        "Token refreshed"
                 )
         );
     }

@@ -7,17 +7,23 @@ import com.delma.userservice.dto.LoginResponseDTO;
 import com.delma.userservice.dto.SignupResponseDTO;
 import com.delma.userservice.entity.User;
 import com.delma.userservice.reposistory.UserReposistory;
+import com.delma.userservice.service.RefreshTokenService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.Nullable;
+import org.springframework.http.ResponseCookie;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.nio.file.AccessDeniedException;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.Set;
+import java.util.UUID;
 
 @Slf4j
 @Service
@@ -27,6 +33,7 @@ public class AuthService {
     private final AuthUtil authUtil;
     private final UserReposistory userReposistory;
     private final PasswordEncoder passwordEncoder;
+    private final RefreshTokenService refreshTokenService;
 
     public  LoginResponseDTO login(LoginRequestDTO loginRequest) {
 
@@ -45,11 +52,25 @@ public class AuthService {
         Authentication authentication = authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(loginRequest.getEmail(),loginRequest.getPassword())
         );
-        User user = (User) authentication.getPrincipal();
+//        User user = (User) authentication.getPrincipal();
 //        UserDetails userDetails = (UserDetails) authentication.getPrincipal();
+        UserDetails userDetails = (UserDetails) authentication.getPrincipal();
+        log.info("User {} authenticated successfully", userDetails.getUsername());
+        User user = userReposistory
+                .findByEmail(userDetails.getUsername())
+                .orElseThrow(() -> new RuntimeException("User not found"));
         // Here you would typically generate a JWT or session token
         String token = authUtil.generateAccessToken(user);
-        return new LoginResponseDTO(token, user.getId(),user.getRoles().toString());
+        log.info("Access token generated for user: {}", loginRequest.getEmail());
+        // Refresh token generation
+        String refreshToken = UUID.randomUUID().toString();
+        log.info("user ID: {}", user.getId());
+        refreshTokenService.save(refreshToken,user.getId(), Instant.now().plus(7, ChronoUnit.DAYS));
+        log.info("User {} authenticated successfully", loginRequest.getEmail());
+
+        String isAdmin = user.getRoles().toString().equals("ADMIN") ? "true" : "false";
+        log.info("isAdmin flag for user {}: {}", loginRequest.getEmail(), isAdmin);
+        return new LoginResponseDTO(token, user.getId(),user.getRoles().toString(), isAdmin,user.getName(),refreshToken);
 
     }
 
@@ -97,7 +118,10 @@ public class AuthService {
         return new LoginResponseDTO(
                 token,
                 authenticatedUser.getId(),
-                authenticatedUser.getRoles().toString()
+                authenticatedUser.getRoles().toString(),
+                "true",
+                authenticatedUser.getName(),
+                null
         );
     }
 }

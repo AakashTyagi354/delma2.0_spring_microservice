@@ -1,7 +1,9 @@
 package com.delma.userservice.security;
 
+import com.delma.userservice.entity.User;
 import com.delma.userservice.reposistory.UserReposistory;
 import lombok.RequiredArgsConstructor;
+
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -20,11 +22,15 @@ public class CustomUserDetailService implements UserDetailsService {
 //    }
 
     @Override
-    public UserDetails loadUserByUsername(String username)
+    public UserDetails loadUserByUsername(String email)
             throws UsernameNotFoundException {
+        User user = userReposistory.findByEmail(email)
+                .orElseThrow(() -> new UsernameNotFoundException("User not found"));
 
-        return (UserDetails) userReposistory.findByEmail(username)
-                .orElseThrow(() ->
-                        new UsernameNotFoundException("User not found"));
+        return org.springframework.security.core.userdetails.User
+                .withUsername(user.getEmail())   // 👈 EMAIL IS USERNAME
+                .password(user.getPassword())
+
+                .build();
     }
 }
