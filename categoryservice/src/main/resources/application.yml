@@ -8,8 +8,8 @@ spring:
     name: categoryservice
   datasource:
     url: jdbc:postgresql://localhost:5432/category_db
-    username: aakashtyagi
-    password: Hardik@2001
+    username: postgres
+    password: postgres
     driver-class-name: org.postgresql.Driver
   security:
     user:

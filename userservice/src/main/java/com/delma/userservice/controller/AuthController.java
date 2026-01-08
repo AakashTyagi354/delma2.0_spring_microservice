@@ -29,10 +29,10 @@ import java.nio.file.AccessDeniedException;
 public class AuthController {
 
     private final AuthService authService;
-    private RefreshTokenService refreshTokenService;
-    private UserService userService;
-    private UserReposistory userReposistory;
-    private AuthUtil authUtil;
+    private final RefreshTokenService refreshTokenService;
+    private final UserService userService;
+    private final UserReposistory userReposistory;
+    private final  AuthUtil authUtil;
 
     @PostMapping("/login")
     public ResponseEntity<ApiResponse<LoginResponseDTO>> login(@RequestBody LoginRequestDTO loginRequest) {
@@ -101,20 +101,32 @@ public class AuthController {
                     .body(ApiResponse.failure("Refresh token is missing", "AUTH_401"));
         }
 
-        RefreshToken storedToken = refreshTokenService.validate(refreshToken);
+        log.info("Received refresh token: {}", refreshToken);
 
-        User user = userReposistory
-                .findById(storedToken.getUserId())
-                .orElseThrow(() -> new RuntimeException("User not found"));
+        try {
+            RefreshToken storedToken = refreshTokenService.validate(refreshToken);
+            log.info("Stored token found for userId: {}", storedToken.getUserId());
 
-        String newAccessToken = authUtil.generateAccessToken(user);
+            User user = userReposistory
+                    .findById(storedToken.getUserId())
+                    .orElseThrow(() -> new RuntimeException("User not found"));
 
-        return ResponseEntity.ok(
-                ApiResponse.success(
-                        new AuthTokenResponse(newAccessToken),
-                        "Token refreshed"
-                )
-        );
+            String newAccessToken = authUtil.generateAccessToken(user);
+            log.info("New access token: {}", newAccessToken);
+
+            return ResponseEntity.ok(
+                    ApiResponse.success(
+                            new AuthTokenResponse(newAccessToken),
+                            "Token refreshed"
+                    )
+            );
+
+        } catch (Exception e) {
+            log.error("Error during refresh token validation: ", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(ApiResponse.failure("Refresh token validation failed", "AUTH_500"));
+        }
     }
+
 
 }

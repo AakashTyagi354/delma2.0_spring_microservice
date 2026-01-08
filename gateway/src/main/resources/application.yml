@@ -25,7 +25,7 @@ spring:
 
       routes:
         - id: userservice
-          uri: http://localhost:8011
+          uri: http://localhost:8111
           predicates:
             - Path=/api/v1/admin/**, /auth/**, /api/users/**
 

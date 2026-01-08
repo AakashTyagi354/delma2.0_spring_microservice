@@ -15,8 +15,8 @@ spring:
         value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
   datasource:
     url: jdbc:postgresql://localhost:5432/delma_doctor_db
-    username: aakashtyagi
-    password: Hardik@2001
+    username: postgres
+    password: postgres
     driver-class-name: org.postgresql.Driver
   security:
     user:

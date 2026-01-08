@@ -1,5 +1,5 @@
 server:
-  port: 8011
+  port: 8111
 
 
 
@@ -8,8 +8,8 @@ spring:
     name: userservice
   datasource:
     url: jdbc:postgresql://localhost:5432/delma_user_db
-    username: aakashtyagi
-    password: Hardik@2001
+    username: postgres
+    password: postgres
     driver-class-name: org.postgresql.Driver
   security:
     user:
@@ -24,6 +24,18 @@ spring:
         format_sql: true
         dialect: org.hibernate.dialect.PostgreSQLDialect
     show-sql: true
+
+logging:
+  level:
+    root:  INFO
+  file:
+    name:  logs/${spring.application.name}.log
+  logback:
+    rollingpolicy:
+      max-history:7
+
+
+
 
 
 

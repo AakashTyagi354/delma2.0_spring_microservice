@@ -29,6 +29,7 @@ public class RefreshTokenServiceImpl implements RefreshTokenService {
 
     @Override
     public RefreshToken validate(String token) {
+        log.info("Entering inside validate refersh token: {}",token);
         RefreshToken refreshToken = repository.findByToken(token)
                 .orElseThrow(() -> new RuntimeException("Invalid refresh token"));
 
