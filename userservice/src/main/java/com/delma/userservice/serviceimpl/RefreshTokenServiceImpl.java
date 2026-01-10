@@ -3,6 +3,7 @@ package com.delma.userservice.serviceimpl;
 import com.delma.userservice.entity.RefreshToken;
 import com.delma.userservice.reposistory.RefreshTokenRepository;
 import com.delma.userservice.service.RefreshTokenService;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -48,7 +49,10 @@ public class RefreshTokenServiceImpl implements RefreshTokenService {
     }
 
     @Override
+    @Transactional
     public void deleteAllByUser(Long userId) {
             repository.deleteAllByUserId(userId);
     }
+
+
 }

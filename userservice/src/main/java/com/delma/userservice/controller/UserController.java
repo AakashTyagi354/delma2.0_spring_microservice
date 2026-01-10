@@ -26,6 +26,7 @@ public class UserController {
 
     @GetMapping("/test")
     public String test(Authentication auth) {
+        log.info("UserID from headers: {}",request.getHeader("X-User-Id"));
         System.out.println("Authenticated: {}"+ auth);
         return "ok";
     }

@@ -25,7 +25,7 @@ public class JwtAuthGatewayFilter implements GlobalFilter, Ordered {
         String path = exchange.getRequest().getURI().getPath();
 
         // we do not check for auth endpoints because they are for login/signup
-        if (path.startsWith("/auth/")) {
+        if (path.startsWith("/auth/signup") || path.startsWith("/auth/login") || path.startsWith("/auth/refresh")) {
             log.info("The enpoint is of auth do not check");
             return chain.filter(exchange);
         }
@@ -34,6 +34,7 @@ public class JwtAuthGatewayFilter implements GlobalFilter, Ordered {
 
 
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+            log.info("Token not present");
             return unauthorized(exchange);
         }
 
@@ -41,6 +42,8 @@ public class JwtAuthGatewayFilter implements GlobalFilter, Ordered {
             String token = authHeader.substring(7);
             String userId = jwtUtil.getUserId(token);
             List<String> roles = jwtUtil.getRoles(token);
+
+            log.info("token: {}",token);
 
             // Add headers to downstream services
             ServerWebExchange modifiedExchange = exchange.mutate()

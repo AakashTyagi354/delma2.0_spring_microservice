@@ -12,6 +12,8 @@ import com.delma.userservice.security.AuthService;
 import com.delma.userservice.security.AuthUtil;
 import com.delma.userservice.service.RefreshTokenService;
 import com.delma.userservice.service.UserService;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpHeaders;
@@ -33,6 +35,7 @@ public class AuthController {
     private final UserService userService;
     private final UserReposistory userReposistory;
     private final  AuthUtil authUtil;
+    private final HttpServletRequest request;
 
     @PostMapping("/login")
     public ResponseEntity<ApiResponse<LoginResponseDTO>> login(@RequestBody LoginRequestDTO loginRequest) {
@@ -41,7 +44,8 @@ public class AuthController {
         log.info("User {} logged in successfully", loginRequest.getEmail());
         ResponseCookie cookie = ResponseCookie.from("refreshToken", loginResponse.getRefreshToken())
                 .httpOnly(true)
-                .secure(true)
+                .secure(false)
+                .sameSite("Lax")
                 .path("/")
                 .maxAge(7 * 24 * 60 * 60)
                 .sameSite("Strict")
@@ -65,6 +69,32 @@ public class AuthController {
                                 "Login successful"
                         )
                 );
+    }
+
+    @PostMapping("/logout")
+    public ResponseEntity<ApiResponse<String>> signOut(HttpServletResponse response){
+        log.info("Logout endpoint request receving");
+        ResponseCookie deleteCookie = ResponseCookie.from("refreshToken","")
+                .httpOnly(true)
+                .secure(false)
+                .sameSite("Lax")
+                .path("/")
+                .maxAge(0)
+                .sameSite("Strict")
+                .build();
+        response.addHeader(HttpHeaders.SET_COOKIE,deleteCookie.toString());
+
+        String userIdHeader = request.getHeader("X-User-Id");
+        log.info("User ID: {}",userIdHeader);
+        if (userIdHeader != null) {
+            Long userId = Long.parseLong(userIdHeader);
+            refreshTokenService.deleteAllByUser(userId);
+        }
+
+        return ResponseEntity.ok(
+                ApiResponse.success("","Logged out successfully")
+        );
+
     }
 
     @PostMapping("/signup")
