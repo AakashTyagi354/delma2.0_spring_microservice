@@ -32,6 +32,22 @@ public class JwtAuthGatewayFilter implements GlobalFilter, Ordered {
 
         String authHeader = exchange.getRequest().getHeaders().getFirst(HttpHeaders.AUTHORIZATION);
 
+//        // soft logout bypass
+//        if (path.startsWith("/auth/logout")) {
+//            if (authHeader != null && authHeader.startsWith("Bearer ")) {
+//                try {
+//                    String token = authHeader.substring(7);
+//                    String userId = jwtUtil.getUserId(token);
+//                    List<String> roles = jwtUtil.getRoles(token);
+//
+//                    return chain.filter(mutateExchange(exchange,userId,roles));
+//
+//                } catch (Exception e) {
+//                    log.info("Logout triggered with invalid/expired token. Proceeding for logout endpoint");
+//                    return chain.filter(exchange);
+//                }
+//            }
+//        }
 
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
             log.info("Token not present");
@@ -40,20 +56,22 @@ public class JwtAuthGatewayFilter implements GlobalFilter, Ordered {
 
         try {
             String token = authHeader.substring(7);
-            String userId = jwtUtil.getUserId(token);
-            List<String> roles = jwtUtil.getRoles(token);
+            String userId;
+            List<String> roles;
 
-            log.info("token: {}",token);
+            log.info("token: {}", token);
 
-            // Add headers to downstream services
-            ServerWebExchange modifiedExchange = exchange.mutate()
-                    .request(builder -> builder
-                            .header("X-User-Id", userId)
-                            .header("X-Roles", String.join(",", roles))
-                    )
-                    .build();
+            if(path.startsWith("/auth/logout")){
 
-            return chain.filter(modifiedExchange);
+                userId = jwtUtil.getUserIdIgnoreExpiry(token);
+                log.info("Logout endpoint for userId: {}",userId);
+                roles = List.of();
+            }else{
+                userId = jwtUtil.getUserId(token);
+                roles = jwtUtil.getRoles(token);
+            }
+
+            return chain.filter(mutateExchange(exchange,userId,roles));
 
         } catch (Exception e) {
             log.error("JWT validation failed: {}", e.getMessage());
@@ -65,6 +83,15 @@ public class JwtAuthGatewayFilter implements GlobalFilter, Ordered {
     private Mono<Void> unauthorized(ServerWebExchange exchange) {
         exchange.getResponse().setStatusCode(HttpStatus.UNAUTHORIZED);
         return exchange.getResponse().setComplete();
+    }
+
+    private ServerWebExchange mutateExchange(ServerWebExchange exchange, String userId, List<String> roles) {
+        return exchange.mutate()
+                .request(builder ->
+                        builder.header("X-User-Id", userId)
+                                .header("X-Roles", String.join(",", roles))
+                ).build();
+
     }
 
     @Override

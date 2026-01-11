@@ -1,6 +1,7 @@
 package com.delma.gateway.security;
 
 import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
 import org.springframework.beans.factory.annotation.Value;
@@ -26,11 +27,24 @@ public class JwtUtil {
                 .parseSignedClaims(token)
                 .getPayload();
     }
+
+    public Claims extractClaimsIgnoreExpiry(String token){
+        try{
+            return extractAllClaims(token);
+
+        }catch(ExpiredJwtException e){
+            return e.getClaims();
+        }
+    }
     public String getUserId(String token) {
         return extractAllClaims(token).get("userId", String.class);
     }
 
     public List<String> getRoles(String token) {
         return extractAllClaims(token).get("roles", List.class);
+    }
+    // Used specifically for the Logout Bypass in your Gateway Filter
+    public String getUserIdIgnoreExpiry(String token) {
+        return extractClaimsIgnoreExpiry(token).get("userId", String.class);
     }
 }
