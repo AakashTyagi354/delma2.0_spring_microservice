@@ -13,4 +13,6 @@ public interface DoctorService {
     public List<Doctor> getPendingApplications();
 
     public List<Doctor> getAllDoctors();
+
+    public List<Doctor> searchDoctors(String keyword);
 }

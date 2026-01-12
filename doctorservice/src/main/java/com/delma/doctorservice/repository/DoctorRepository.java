@@ -11,4 +11,6 @@ import java.util.List;
 public interface DoctorRepository extends JpaRepository<Doctor, Long> {
     boolean existsByUserIdAndStatus(String userId, ApplicationStatus status);
     List<Doctor> findAllByStatus(ApplicationStatus status);
+    List<Doctor> findByFirstNameContainingIgnoreCaseOrLastNameContainingIgnoreCaseOrSpecializationContainingIgnoreCase(String firstName, String lastName, String specialization);
+
 }

@@ -10,10 +10,14 @@ import com.delma.doctorservice.repository.DoctorRepository;
 import com.delma.doctorservice.service.DoctorService;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataAccessException;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class DoctorServiceImpl implements DoctorService {
@@ -52,7 +56,7 @@ public class DoctorServiceImpl implements DoctorService {
         // Extract JWT token from incoming request
         String token = request.getHeader("Authorization");
         // optionally call User MS to update ROLE_USER -> ROLE_DOCTOR
-        userServiceClient.addDoctorRole(app.getUserId(),token);
+        userServiceClient.addDoctorRole(app.getUserId(), token);
 
         NotificationEvent event = new NotificationEvent(
                 app.getUserId().toString(),
@@ -81,5 +85,26 @@ public class DoctorServiceImpl implements DoctorService {
             return allApprovedDoctors;
         }
         return List.of();
+    }
+
+    @Override
+    public List<Doctor> searchDoctors(String keyword) {
+        log.info("Searching for doctors with keyword: {}", keyword);
+        try {
+
+            List<Doctor> searchResults =
+                    doctorRepository.findByFirstNameContainingIgnoreCaseOrLastNameContainingIgnoreCaseOrSpecializationContainingIgnoreCase(keyword, keyword, keyword);
+
+            return searchResults.stream()
+                    .filter(doctor -> doctor.getStatus() == ApplicationStatus.APPROVED)
+                    .collect(Collectors.toList());
+        } catch (DataAccessException ex) {
+            log.info("Database error while searching for doctors: {}", ex.getMessage());
+            throw new RuntimeException("Database error occurred while searching for doctors", ex);
+        } catch (Exception ex) {
+            throw new RuntimeException("An unexpected error occurred while searching for doctors", ex);
+        }
+
+
     }
 }

@@ -19,7 +19,6 @@ import java.util.List;
 public class JwtAuthGatewayFilter implements GlobalFilter, Ordered {
     private final JwtUtil jwtUtil;
 
-
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
         String path = exchange.getRequest().getURI().getPath();
@@ -32,22 +31,7 @@ public class JwtAuthGatewayFilter implements GlobalFilter, Ordered {
 
         String authHeader = exchange.getRequest().getHeaders().getFirst(HttpHeaders.AUTHORIZATION);
 
-//        // soft logout bypass
-//        if (path.startsWith("/auth/logout")) {
-//            if (authHeader != null && authHeader.startsWith("Bearer ")) {
-//                try {
-//                    String token = authHeader.substring(7);
-//                    String userId = jwtUtil.getUserId(token);
-//                    List<String> roles = jwtUtil.getRoles(token);
-//
-//                    return chain.filter(mutateExchange(exchange,userId,roles));
-//
-//                } catch (Exception e) {
-//                    log.info("Logout triggered with invalid/expired token. Proceeding for logout endpoint");
-//                    return chain.filter(exchange);
-//                }
-//            }
-//        }
+
 
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
             log.info("Token not present");

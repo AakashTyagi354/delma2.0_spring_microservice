@@ -1,10 +1,13 @@
 package com.delma.doctorservice.controller;
 
+import com.delma.doctorservice.dto.ApiResponse;
 import com.delma.doctorservice.dto.DoctorApplicationRequest;
 import com.delma.doctorservice.entity.Doctor;
 import com.delma.doctorservice.service.DoctorService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Component;
@@ -54,5 +57,21 @@ public class DoctorController {
     public ResponseEntity<List<Doctor>> getAllDoctors() {
         log.info("Fetching all approved doctors");
         return ResponseEntity.ok(doctorService.getAllDoctors());
+    }
+
+    @GetMapping("/search/{keyword}")
+    public ResponseEntity<ApiResponse<List<Doctor>>> searchDoctors(@PathVariable String keyword){
+            List<Doctor> doctors = doctorService.searchDoctors(keyword);
+
+            if(doctors.isEmpty()){
+                return new ResponseEntity<>(
+                        new ApiResponse<>(true,"No doctors found matching the keyword.", doctors,null),
+                        HttpStatus.OK
+                );
+            }
+            return new ResponseEntity<>(
+                    new ApiResponse<>(true,"Doctors found matching the keyword.", doctors,null),
+                    HttpStatus.OK
+            );
     }
 }
