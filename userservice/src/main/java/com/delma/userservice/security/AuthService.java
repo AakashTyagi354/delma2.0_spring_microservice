@@ -60,6 +60,7 @@ public class AuthService {
                 .findByEmail(userDetails.getUsername())
                 .orElseThrow(() -> new RuntimeException("User not found"));
         // Here you would typically generate a JWT or session token
+        log.info("user: {}",user);
         String token = authUtil.generateAccessToken(user);
         log.info("Access token generated for user: {}", loginRequest.getEmail());
         // Refresh token generation
@@ -68,7 +69,7 @@ public class AuthService {
         refreshTokenService.save(refreshToken,user.getId(), Instant.now().plus(7, ChronoUnit.DAYS));
         log.info("User {} authenticated successfully", loginRequest.getEmail());
 
-        String isAdmin = user.getRoles().toString().equals("ADMIN") ? "true" : "false";
+        String isAdmin = user.getIsAdmin().equals("true") ? "true" : "false";
         log.info("isAdmin flag for user {}: {}", loginRequest.getEmail(), isAdmin);
         return new LoginResponseDTO(token, user.getId(),user.getRoles().toString(), isAdmin,user.getName(),refreshToken);
 

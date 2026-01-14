@@ -52,6 +52,10 @@ spring:
           uri: http://localhost:8017
           predicates:
             - Path=/api/v1/notifications/**
+        - id: documentservice
+          uri: http://localhost:8091
+          predicates:
+            - Path=/api/v1/documents/**
 
 
 

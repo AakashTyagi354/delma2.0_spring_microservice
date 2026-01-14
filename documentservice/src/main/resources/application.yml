@@ -2,20 +2,22 @@
 
 
 
+
+
+
 server:
-  port: 8012
+  port: 8091
 
 spring:
   application:
-    name: appointmentservice
+    neame: documentservice
   kafka:
     bootstrap-servers: localhost:9092
     producer:
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
       value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
-
   datasource:
-    url: jdbc:postgresql://localhost:5432/appointment_db
+    url: jdbc:postgresql://localhost:5432/delma_document_db
     username: postgres
     password: postgres
     driver-class-name: org.postgresql.Driver
@@ -33,13 +35,7 @@ spring:
         dialect: org.hibernate.dialect.PostgreSQLDialect
     show-sql: true
 
-# ZegoCloud Credentials from Console
-zego:
-  app:
-    id: 1506574501
-  server:
-    secret: 209edc4cb781449de8fce91e57d34536
-
 
 jwt:
   secret: Z0ZqQm1nQ0tZQ1N2R3p3VjVnQ0hFZ3pMZ1R2aD...
+

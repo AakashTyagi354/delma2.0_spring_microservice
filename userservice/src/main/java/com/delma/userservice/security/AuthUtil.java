@@ -43,7 +43,7 @@ public class AuthUtil {
                 .claims(claims)
                 .subject(user.getEmail()) // email is better than name
                 .issuedAt(new Date())
-                .expiration(new Date(System.currentTimeMillis() + 1000*60*5))
+                .expiration(new Date(System.currentTimeMillis() + 1000*60*5*20))
                 .signWith(getSecretKey())
                 .compact();
     }

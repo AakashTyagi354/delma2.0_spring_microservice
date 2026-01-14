@@ -9,7 +9,7 @@ import org.springframework.web.bind.annotation.RequestHeader;
 
 @FeignClient(
         name = "userservice",
-        url = "http://localhost:8011"
+        url = "http://localhost:8111"
 )
 public interface UserServiceClient {
 

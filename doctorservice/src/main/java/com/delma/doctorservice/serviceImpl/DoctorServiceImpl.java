@@ -48,8 +48,8 @@ public class DoctorServiceImpl implements DoctorService {
         doctorRepository.save(app);
     }
 
-    public void approveApplication(Long applicationId) {
-        Doctor app = doctorRepository.findById(applicationId)
+    public void approveApplication(Long userId) {
+        Doctor app = doctorRepository.findByUserId(userId)
                 .orElseThrow(() -> new RuntimeException("Application not found"));
         app.setStatus(ApplicationStatus.APPROVED);
         doctorRepository.save(app);

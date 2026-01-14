@@ -27,7 +27,7 @@ public class AdminController {
 
 
         // Forward token to Doctor MS
-        doctorClient.approveDoctor(doctorId);
+        doctorClient.approveDoctor(doctorId, request.getHeader("Authorization"));
 
         return ResponseEntity.ok(
                 ApiResponse.success(null, "Doctor application approved successfully")

@@ -14,7 +14,7 @@ import java.util.List;
 )
 public interface DoctorClient {
     @PutMapping("/api/v1/doctor/approve/{doctorId}")
-    void approveDoctor(@PathVariable String doctorId);
+    void approveDoctor(@PathVariable String doctorId, @RequestHeader("Authorization") String token);
 
     @PostMapping("/api/v1/doctor/reject/{id}")
     String rejectApplication(@PathVariable Long id);
