@@ -39,9 +39,10 @@
 		<module>notificationservice</module>
         <module>patientservice</module>
         <module>orderservice</module>
+        <module>discovery-server</module>
 
 
-	</modules>
+    </modules>
 
 	<dependencyManagement>
 		<dependencies>

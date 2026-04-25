@@ -37,7 +37,7 @@ public class DoctorController {
     }
 
     @PreAuthorize("hasRole('ADMIN')")
-    @PostMapping("/reject/{id}")
+    @PutMapping("/reject/{id}")
     public ResponseEntity<ApiResponse<Void>> reject(@PathVariable Long id) {
         doctorService.rejectApplication(id);
         return ResponseEntity.ok(ApiResponse.success("Application rejected"));

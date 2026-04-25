@@ -25,47 +25,62 @@ spring:
 
       routes:
         - id: paymentservice
-          uri: http://localhost:8083
+          uri: lb://paymentservice
           predicates:
             - Path=/api/v1/payments/**
 
         - id: userservice
-          uri: http://localhost:8111
+          uri: lb://userservice
           predicates:
             - Path=/api/v1/admin/**, /auth/**, /api/users/**
 
         - id: doctorservice
-          uri: http://localhost:8010
+          uri: lb://doctorservice
           predicates:
             - Path=/api/v1/doctor/**
 
         - id: appointmentservice
-          uri: http://localhost:8012
+          uri: lb://appointmentservice
           predicates:
             - Path=/api/v1/slots/**, /api/v1/appointments/**
 
         - id: categoryservice
-          uri: http://localhost:8015
+          uri: lb://categoryservice
           predicates:
             - Path=/api/v1/category/**
 
         - id: productservice
-          uri: http://localhost:8016
+          uri: lb://productservice
           predicates:
             - Path=/api/v1/product/**
+
         - id: notificationservice
-          uri: http://localhost:8017
+          uri: lb://notificationservice
           predicates:
             - Path=/api/v1/notifications/**
+
         - id: documentservice
-          uri: http://localhost:8091
+          uri: lb://documentservice
           predicates:
             - Path=/api/v1/documents/**
 
+        - id: orderservice
+          uri: lb://orderservice
+          predicates:
+            - Path=/api/v1/orders/**
 
 
 
 
+# Eureka client config for gateway
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:8761/eureka/
+    fetch-registry: true
+    register-with-eureka: true
+  instance:
+    prefer-ip-address: true
 
 jwt:
   secret: Z0ZqQm1nQ0tZQ1N2R3p3VjVnQ0hFZ3pMZ1R2aD...

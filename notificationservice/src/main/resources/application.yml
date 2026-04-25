@@ -40,6 +40,15 @@ spring:
     show-sql: true
 
 
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:8761/eureka/
+    register-with-eureka: true    # register this service with Eureka on startup
+    fetch-registry: true          # fetch the registry so this service can call others
+  instance:
+    prefer-ip-address: true       # use IP address instead of hostname
+
 logging:
   level:
     org.apache.kafka: INFO
