@@ -47,6 +47,8 @@
 		<module>paymentservice</module>
 		<module>documentservice</module>
 		<module>notificationservice</module>
+        <module>patientservice</module>
+        <module>orderservice</module>
 
 		<!-- Shared Libs -->
 <!--		<module>apigateway</module>-->
@@ -78,11 +80,11 @@
 	<build>
 		<plugins>
 
-			<!-- Spring Boot Plugin -->
-			<plugin>
-				<groupId>org.springframework.boot</groupId>
-				<artifactId>spring-boot-maven-plugin</artifactId>
-			</plugin>
+<!--			&lt;!&ndash; Spring Boot Plugin &ndash;&gt;-->
+<!--			<plugin>-->
+<!--				<groupId>org.springframework.boot</groupId>-->
+<!--				<artifactId>spring-boot-maven-plugin</artifactId>-->
+<!--			</plugin>-->
 
 			<!-- Compiler Plugin -->
 			<plugin>

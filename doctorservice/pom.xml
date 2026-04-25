@@ -11,22 +11,8 @@
 	<artifactId>doctorservice</artifactId>
 	<name>doctor Service</name>
 	<description>Handles User Registration, Login, Notifications, Doctor Application</description>
-	<url/>
-	<licenses>
-		<license/>
-	</licenses>
-	<developers>
-		<developer/>
-	</developers>
-	<scm>
-		<connection/>
-		<developerConnection/>
-		<tag/>
-		<url/>
-	</scm>
-	<properties>
-		<java.version>25</java.version>
-	</properties>
+
+
 	<dependencies>
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
