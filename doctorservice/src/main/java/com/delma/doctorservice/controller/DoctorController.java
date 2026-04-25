@@ -70,15 +70,10 @@ public class DoctorController {
     public ResponseEntity<ApiResponse<List<Doctor>>> searchDoctors(@PathVariable String keyword){
             List<Doctor> doctors = doctorService.searchDoctors(keyword);
 
-            if(doctors.isEmpty()){
-                return new ResponseEntity<>(
-                        new ApiResponse<>(true,"No doctors found matching the keyword.", doctors,null),
-                        HttpStatus.OK
-                );
-            }
-            return new ResponseEntity<>(
-                    new ApiResponse<>(true,"Doctors found matching the keyword.", doctors,null),
-                    HttpStatus.OK
-            );
+        return ResponseEntity.ok(
+                ApiResponse.success(doctors, doctors.isEmpty()
+                        ? "No doctors found matching: " + keyword
+                        : "Doctors fetched successfully")
+        );
     }
 }

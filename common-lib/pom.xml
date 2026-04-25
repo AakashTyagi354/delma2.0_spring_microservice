@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>com.delma</groupId>
+        <artifactId>delma</artifactId>
+        <version>0.0.1-SNAPSHOT</version>
+        <relativePath>../pom.xml</relativePath>
+    </parent>
+
+    <artifactId>common-lib</artifactId>
+    <name>Common Library</name>
+    <description>Shared code for all Delma microservices: ApiResponse, exceptions, GlobalExceptionHandler</description>
+
+    <!--
+        LESSON: No <packaging>jar</packaging> needed — jar is the default.
+        More importantly: NO spring-boot-maven-plugin here.
+        This is a plain library JAR, not a runnable Spring Boot app.
+        If you add the boot plugin, Maven will try to find a main() class and fail.
+    -->
+
+    <dependencies>
+
+        <!-- Needed for @RestControllerAdvice, ResponseEntity, HttpStatus -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-web</artifactId>
+        </dependency>
+
+        <!-- Needed for MethodArgumentNotValidException handling -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-validation</artifactId>
+        </dependency>
+
+        <!-- Lombok for clean code -->
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <optional>true</optional>
+        </dependency>
+    </dependencies>
+
+</project>

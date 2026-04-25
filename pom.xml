@@ -17,27 +17,17 @@
 	<description>Parent POM for Delma Backend Microservices</description>
 	<!-- 🔥 THIS IS REQUIRED FOR MULTI-MODULE PROJECTS -->
 	<packaging>pom</packaging>
-	<url/>
-	<licenses>
-		<license/>
-	</licenses>
-	<developers>
-		<developer/>
-	</developers>
-	<scm>
-		<connection/>
-		<developerConnection/>
 
-		<tag/>
-		<url/>
-	</scm>
 	<properties>
 		<java.version>21</java.version>
 		<spring-cloud.version>2025.1.0</spring-cloud.version>
+        <!-- ADDED: single source of truth for Lombok version -->
+        <lombok.version>1.18.38</lombok.version>
 	</properties>
 
 	<modules>
 
+        <module>common-lib</module>
 		<module>doctorservice</module>
 		<module>gateway</module>
 		<module>userservice</module>
@@ -50,20 +40,9 @@
         <module>patientservice</module>
         <module>orderservice</module>
 
-		<!-- Shared Libs -->
-<!--		<module>apigateway</module>-->
 
 	</modules>
 
-<!--	<dependencies>-->
-<!--		<dependency>-->
-<!--			<groupId>org.springframework.cloud</groupId>-->
-<!--			<artifactId>spring-cloud-dependencies</artifactId>-->
-<!--			<version>${spring-cloud.version}</version>-->
-<!--			<type>pom</type>-->
-<!--			<scope>import</scope>-->
-<!--		</dependency>-->
-<!--	</dependencies>-->
 	<dependencyManagement>
 		<dependencies>
 			<dependency>
@@ -76,49 +55,27 @@
 		</dependencies>
 	</dependencyManagement>
 
-
-	<build>
-		<plugins>
-
-<!--			&lt;!&ndash; Spring Boot Plugin &ndash;&gt;-->
-<!--			<plugin>-->
-<!--				<groupId>org.springframework.boot</groupId>-->
-<!--				<artifactId>spring-boot-maven-plugin</artifactId>-->
-<!--			</plugin>-->
-
-			<!-- Compiler Plugin -->
-			<plugin>
-				<groupId>org.apache.maven.plugins</groupId>
-				<artifactId>maven-compiler-plugin</artifactId>
-				<version>3.11.0</version>
-				<configuration>
-					<source>${java.version}</source>
-					<target>${java.version}</target>
-				</configuration>
-			</plugin>
-
-		</plugins>
-	</build>
-
-<!--	<build>-->
-<!--		<plugins>-->
-<!--			<plugin>-->
-<!--				<groupId>org.apache.maven.plugins</groupId>-->
-<!--				<artifactId>maven-compiler-plugin</artifactId>-->
-<!--				<version>3.11.0</version>-->
-<!--				<configuration>-->
-<!--					<source>${java.version}</source>-->
-<!--					<target>${java.version}</target>-->
-<!--					<annotationProcessorPaths>-->
-<!--						<path>-->
-<!--							<groupId>org.projectlombok</groupId>-->
-<!--							<artifactId>lombok</artifactId>-->
-<!--							<version>1.18.32</version>-->
-<!--						</path>-->
-<!--					</annotationProcessorPaths>-->
-<!--				</configuration>-->
-<!--			</plugin>-->
-<!--		</plugins>-->
-<!--	</build>-->
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.13.0</version>
+                <configuration>
+                    <source>${java.version}</source>
+                    <target>${java.version}</target>
+                    <!-- FIX: Lombok annotation processor defined once here,
+                         so children don't need to repeat it -->
+                    <annotationProcessorPaths>
+                        <path>
+                            <groupId>org.projectlombok</groupId>
+                            <artifactId>lombok</artifactId>
+                            <version>${lombok.version}</version>
+                        </path>
+                    </annotationProcessorPaths>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
 
 </project>
