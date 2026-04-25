@@ -1,16 +1,13 @@
 package com.delma.doctorservice.controller;
 
-import com.delma.doctorservice.dto.ApiResponse;
+import com.delma.common.dto.ApiResponse;
 import com.delma.doctorservice.dto.DoctorApplicationRequest;
-import com.delma.doctorservice.entity.Doctor;
+import com.delma.doctorservice.dto.DoctorResponse;
 import com.delma.doctorservice.service.DoctorService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.stereotype.Component;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -24,51 +21,48 @@ public class DoctorController {
     private final DoctorService doctorService;
 
     @PostMapping("/apply")
-    public ResponseEntity<String> applyDoctor(@RequestParam String userId,
+    public ResponseEntity<ApiResponse<Void>> applyDoctor(@RequestParam String userId,
                                               @RequestBody DoctorApplicationRequest request) {
-        System.out.println("Received application for userId: " + userId);
+
         doctorService.submitApplication(userId, request);
-        return ResponseEntity.ok("Application submitted successfully");
+        return ResponseEntity.ok(ApiResponse.success("Application submitted successfully"));
     }
 
     // Admin endpoints
 //    @PreAuthorize("hasRole('ADMIN')")
     @PutMapping("/approve/{id}")
-    public ResponseEntity<String> approve(@PathVariable Long id) {
+    public ResponseEntity<ApiResponse<Void>> approve(@PathVariable Long id) {
         doctorService.approveApplication(id);
-        return ResponseEntity.ok("Application approved");
+        return ResponseEntity.ok(ApiResponse.success("Application approved"));
     }
 
     @PreAuthorize("hasRole('ADMIN')")
     @PostMapping("/reject/{id}")
-    public ResponseEntity<String> reject(@PathVariable Long id) {
-        System.out.println("Rejecting application with id: " + id);
+    public ResponseEntity<ApiResponse<Void>> reject(@PathVariable Long id) {
         doctorService.rejectApplication(id);
-        return ResponseEntity.ok("Application rejected");
+        return ResponseEntity.ok(ApiResponse.success("Application rejected"));
     }
 
     @PreAuthorize("hasRole('ADMIN')")
     @GetMapping("/pending")
-    public ResponseEntity<List<Doctor>> pendingApplications() {
-        return ResponseEntity.ok(doctorService.getPendingApplications());
+    public ResponseEntity<ApiResponse<List<DoctorResponse>>> pendingApplications() {
+        return ResponseEntity.ok(ApiResponse.success(doctorService.getPendingApplications(),"Getting pending Doctor applications"));
     }
 
     @GetMapping("/all")
-    public ResponseEntity<List<Doctor>> getAllDoctors() {
-        log.info("Fetching all approved doctors");
-        return ResponseEntity.ok(doctorService.getAllDoctors());
+    public ResponseEntity<ApiResponse<List<DoctorResponse>>> getAllDoctors() {
+        return ResponseEntity.ok(ApiResponse.success(doctorService.getAllDoctors(),"Getting all the doctors"));
     }
 
     @GetMapping("/pending-doctors")
-    public ResponseEntity<List<Doctor>> getAllPendingDoctors() {
-        log.info("Fetching all pending doctors");
-        return ResponseEntity.ok(doctorService.getAllPendingDOctors());
+    public ResponseEntity<ApiResponse<List<DoctorResponse>>> getAllPendingDoctors() {
+        return ResponseEntity.ok(ApiResponse.success(doctorService.getAllPendingDoctors(),"Doctors fetched successfully"));
     }
 
 
     @GetMapping("/search/{keyword}")
-    public ResponseEntity<ApiResponse<List<Doctor>>> searchDoctors(@PathVariable String keyword){
-            List<Doctor> doctors = doctorService.searchDoctors(keyword);
+    public ResponseEntity<ApiResponse<List<DoctorResponse>>> searchDoctors(@PathVariable String keyword){
+            List<DoctorResponse> doctors = doctorService.searchDoctors(keyword);
 
         return ResponseEntity.ok(
                 ApiResponse.success(doctors, doctors.isEmpty()

@@ -1,19 +1,20 @@
 package com.delma.doctorservice.service;
 
 import com.delma.doctorservice.dto.DoctorApplicationRequest;
+import com.delma.doctorservice.dto.DoctorResponse;
 import com.delma.doctorservice.entity.Doctor;
-import org.jspecify.annotations.Nullable;
+
 
 import java.util.List;
 
 public interface DoctorService {
-    public void submitApplication(String userId, DoctorApplicationRequest request);
-    public void approveApplication(Long applicationId);
-    public void rejectApplication(Long applicationId);
-    public List<Doctor> getPendingApplications();
+     void submitApplication(String userId, DoctorApplicationRequest request);
+     void approveApplication(Long applicationId);
+     void rejectApplication(Long applicationId);
+     List<DoctorResponse> getPendingApplications();
 
-    public List<Doctor> getAllDoctors();
-    public List<Doctor> getAllPendingDOctors();
+     List<DoctorResponse> getAllDoctors();
+     List<DoctorResponse> getAllPendingDoctors();
 
-    public List<Doctor> searchDoctors(String keyword);
+     List<DoctorResponse> searchDoctors(String keyword);
 }
