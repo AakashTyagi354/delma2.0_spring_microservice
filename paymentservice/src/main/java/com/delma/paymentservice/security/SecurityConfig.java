@@ -1,4 +1,4 @@
-package com.delma.categoryservice.security;
+package com.delma.paymentservice.security;
 
 
 import lombok.RequiredArgsConstructor;

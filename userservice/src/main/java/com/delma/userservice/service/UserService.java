@@ -13,4 +13,6 @@ public interface UserService {
     public void applyDoctor(Doctor request, String email);
     public void addRoleDoctor(Long userId);
 
+    public List<User> findAllUsers();
+
 }

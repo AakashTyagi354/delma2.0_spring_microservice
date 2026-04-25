@@ -9,9 +9,11 @@ import com.delma.categoryservice.service.CategoryService;
 import com.delma.categoryservice.util.SlugUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.crossstore.ChangeSetPersister;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -21,7 +23,7 @@ public class CategoryServiceImpl implements CategoryService {
     private final CategoryRepository repository;
 
     @Override
-    public CategoryResponse create(CategoryRequest request) {
+    public List<CategoryResponse> create(CategoryRequest request) {
         String slug = SlugUtil.toSlug(request.name());
         if(repository.existsBySlug(slug)){
             throw new RuntimeException("Category already exists");
@@ -32,7 +34,8 @@ public class CategoryServiceImpl implements CategoryService {
         category.setSlug(slug);
         category.setDescription(request.description());
         Category savedCategory = repository.save(category);
-        return map(savedCategory);
+        return repository.findAll().stream().map(this::map)
+                .toList();
     }
 
     @Override
@@ -60,5 +63,14 @@ public class CategoryServiceImpl implements CategoryService {
                 category.getSlug(),
                 category.getDescription()
         );
+    }
+
+    @Override
+    public List<CategoryResponse> deleteCategory(Long categoryId) {
+        Category category = repository.findById(categoryId).orElseThrow(() -> new RuntimeException("Category Not found"));
+       repository.deleteById(categoryId);
+
+       return repository.findAll().stream().map((this::map)).toList();
+
     }
 }

@@ -2,6 +2,7 @@ package com.delma.notificationservice.controller;
 
 import com.delma.notificationservice.dto.NotificationCreateRequest;
 import com.delma.notificationservice.dto.NotificationResponse;
+import com.delma.notificationservice.response.ApiResponse;
 import com.delma.notificationservice.service.NotificationService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -35,5 +36,11 @@ public class NotificationController {
     public ResponseEntity<Void> markAsRead(@PathVariable UUID id) {
         notificationService.markAsRead(id);
         return ResponseEntity.noContent().build();
+    }
+    @DeleteMapping("/delete/{id}")
+    public ResponseEntity<ApiResponse<String>> deleteNotification(@PathVariable String id) {
+        notificationService.deleteNotification(id);
+        ApiResponse<String> response = new ApiResponse<>("Notification deleted successfully");
+        return ResponseEntity.ok(response);
     }
 }

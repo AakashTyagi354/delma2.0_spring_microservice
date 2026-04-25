@@ -6,6 +6,7 @@ import com.delma.notificationservice.entity.Notification;
 import com.delma.notificationservice.kafka.NotificationEvent;
 import com.delma.notificationservice.reposistory.NotificationRepository;
 import com.delma.notificationservice.service.NotificationService;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.Nullable;
@@ -82,5 +83,15 @@ public class NotificationServiceImpl implements NotificationService {
         notification.setCreatedAt(LocalDateTime.now());
 
         repository.save(notification);
+    }
+
+    @Override
+    @Transactional
+    public void deleteNotification(String id) {
+        List<Notification> list =
+                repository.findByUserId(id);
+        if(list.isEmpty()) throw new IllegalArgumentException("No notifications found for user id: " + id);
+
+        repository.deleteAllByUserId(id);
     }
 }

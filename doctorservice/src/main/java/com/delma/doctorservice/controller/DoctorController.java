@@ -59,6 +59,13 @@ public class DoctorController {
         return ResponseEntity.ok(doctorService.getAllDoctors());
     }
 
+    @GetMapping("/pending-doctors")
+    public ResponseEntity<List<Doctor>> getAllPendingDoctors() {
+        log.info("Fetching all pending doctors");
+        return ResponseEntity.ok(doctorService.getAllPendingDOctors());
+    }
+
+
     @GetMapping("/search/{keyword}")
     public ResponseEntity<ApiResponse<List<Doctor>>> searchDoctors(@PathVariable String keyword){
             List<Doctor> doctors = doctorService.searchDoctors(keyword);

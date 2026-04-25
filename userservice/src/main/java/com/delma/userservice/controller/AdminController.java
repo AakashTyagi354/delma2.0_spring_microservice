@@ -2,8 +2,10 @@ package com.delma.userservice.controller;
 
 import com.delma.userservice.client.DoctorClient;
 import com.delma.userservice.dto.DoctorResponseDTO;
+import com.delma.userservice.entity.User;
 import com.delma.userservice.response.ApiResponse;
 import com.delma.userservice.service.UserService;
+import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -21,6 +23,7 @@ public class AdminController {
     private final HttpServletRequest request;
     private final UserService userService;
 
+    @CircuitBreaker(name = "doctorservice")
     @PutMapping("/approve-doctors/{doctorId}")
     public ResponseEntity<ApiResponse<Void>> approveDoctor(@PathVariable String doctorId) {
         // Extract JWT token from incoming request
@@ -64,6 +67,17 @@ public class AdminController {
                 ApiResponse.success(null, "Doctor role added to user successfully")
         );
     }
+
+    @GetMapping("/getall-users")
+    public ResponseEntity<ApiResponse<List<User>>> getAllUsers(){
+            List<User> allUsers = userService.findAllUsers();
+
+            return ResponseEntity.ok(
+                    ApiResponse.success(allUsers,"Fetching all the users from admin portal")
+            );
+    }
+
+
 
 
 

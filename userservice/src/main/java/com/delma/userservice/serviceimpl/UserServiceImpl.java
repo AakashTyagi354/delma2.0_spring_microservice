@@ -10,7 +10,9 @@ import lombok.AllArgsConstructor;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -38,6 +40,13 @@ public class UserServiceImpl implements UserService {
 
         user.getRoles().add(Role.DOCTOR);  // assuming Role is your enum
         userReposistory.save(user);
+    }
+
+    @Override
+    public List<User> findAllUsers() {
+
+
+        return userReposistory.findByIsDoctorAndIsAdmin("false","false");
     }
 
 

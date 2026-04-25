@@ -22,8 +22,16 @@ public class CategoryController {
 
     @PreAuthorize("hasRole('ADMIN')")
     @PostMapping("/create")
-    public ResponseEntity<CategoryResponse> create(@RequestBody @Valid CategoryRequest request) {
-        return ResponseEntity.ok(categoryService.create(request));
+    public ResponseEntity<List<CategoryResponse>> create(@RequestBody @Valid CategoryRequest request) {
+        List<CategoryResponse> allCategories = categoryService.create((request));
+        return ResponseEntity.ok(allCategories);
+    }
+
+    @PreAuthorize("hasRole('ADMIN')")
+    @DeleteMapping("/delete/{id}")
+    public ResponseEntity<List<CategoryResponse>> deleteCategory(@PathVariable(name = "id") Long categoryId){
+        List<CategoryResponse> deleteCategory = categoryService.deleteCategory(categoryId);
+        return ResponseEntity.ok(deleteCategory);
     }
 
     @GetMapping("/all")
@@ -34,6 +42,8 @@ public class CategoryController {
     @GetMapping("/{slug}")
     public ResponseEntity<CategoryResponse> getBySlug(@PathVariable String slug) {
         log.info("Fetching category with slug: {}", slug);
-        return ResponseEntity.ok(categoryService.getBySlug(slug));
+        CategoryResponse cat =  categoryService.getBySlug(slug);
+        log.info("category: {}",cat);
+        return ResponseEntity.ok(cat);
     }
 }

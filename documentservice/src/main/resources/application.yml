@@ -35,6 +35,15 @@ spring:
         dialect: org.hibernate.dialect.PostgreSQLDialect
     show-sql: true
 
+aws:
+  s3:
+    bucket:
+      name:  delma-patient-documents
+    access:
+      key:  ${AWS_ACCESS_KEY_ID}
+    secret:
+      key:  ${AWS_SECRET_ACCESS_KEY}
+    region: eu-north-1
 
 jwt:
   secret: Z0ZqQm1nQ0tZQ1N2R3p3VjVnQ0hFZ3pMZ1R2aD...

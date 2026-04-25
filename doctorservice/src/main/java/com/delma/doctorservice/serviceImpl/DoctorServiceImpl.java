@@ -49,7 +49,7 @@ public class DoctorServiceImpl implements DoctorService {
     }
 
     public void approveApplication(Long userId) {
-        Doctor app = doctorRepository.findByUserId(userId)
+        Doctor app = doctorRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("Application not found"));
         app.setStatus(ApplicationStatus.APPROVED);
         doctorRepository.save(app);
@@ -81,6 +81,16 @@ public class DoctorServiceImpl implements DoctorService {
     @Override
     public List<Doctor> getAllDoctors() {
         List<Doctor> allApprovedDoctors = doctorRepository.findAllByStatus(ApplicationStatus.APPROVED);
+        if (allApprovedDoctors != null) {
+            return allApprovedDoctors;
+        }
+        return List.of();
+    }
+
+    @Override
+    public List<Doctor> getAllPendingDOctors() {
+        List<Doctor> allApprovedDoctors = doctorRepository.findAllByStatus(ApplicationStatus.PENDING);
+        log.info("all athe pending doctors: {}",allApprovedDoctors);
         if (allApprovedDoctors != null) {
             return allApprovedDoctors;
         }

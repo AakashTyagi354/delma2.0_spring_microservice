@@ -15,4 +15,6 @@ public interface NotificationService {
 
     void markAsRead(UUID notificationId);
     public void createFromEvent(NotificationEvent event);
+
+    void deleteNotification(String id);
 }

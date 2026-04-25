@@ -24,6 +24,11 @@ spring:
             allowCredentials: true
 
       routes:
+        - id: paymentservice
+          uri: http://localhost:8083
+          predicates:
+            - Path=/api/v1/payments/**
+
         - id: userservice
           uri: http://localhost:8111
           predicates:

@@ -5,6 +5,18 @@
 server:
   port: 8010
 
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "*"
+  endpoint:
+    health:
+      show-details: always
+  health:
+    circuitbreakers:
+      enabled: true
+
 spring:
   application:
     neame: doctorservice

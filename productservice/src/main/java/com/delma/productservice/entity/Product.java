@@ -1,6 +1,7 @@
 package com.delma.productservice.entity;
 
 import jakarta.persistence.*;
+import lombok.Builder;
 import lombok.Data;
 import org.hibernate.annotations.CreationTimestamp;
 
@@ -11,10 +12,11 @@ import java.util.UUID;
 @Entity
 @Table(name = "products")
 @Data
+
 public class Product {
     @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
-    private UUID id;
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
 
     private String name;
     private String slug;
@@ -25,7 +27,9 @@ public class Product {
     private BigDecimal price;
     private Integer quantity;
 
-    private UUID categoryId;
+    private String imageURL;
+
+    private Long categoryId;
 
     private Boolean active = true;
 

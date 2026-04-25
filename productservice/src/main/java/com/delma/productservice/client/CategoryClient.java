@@ -12,12 +12,10 @@ public interface CategoryClient {
 
     @GetMapping("/api/v1/category/{slug}")
     CategoryResponse getBySlug(
-            @RequestHeader("X-User-Id") String userId,
-            @RequestHeader("X-Roles") String roles,
-            @PathVariable String slug);
+            @PathVariable String slug,@RequestHeader("Authorization") String token);
 
     record CategoryResponse(
-            UUID id,
+            Long id,
             String name,
             String slug,
             String description

@@ -13,6 +13,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 @Slf4j
 @RestController
@@ -25,9 +26,19 @@ public class productController {
     @PreAuthorize("hasRole('ADMIN')")
     @PostMapping("/create")
     public ResponseEntity<ProductResponse> createProduct(
-            @Valid @RequestBody ProductCreateRequest request) {
-        log.info("Creating product with name: {}", request.getName());
-        ProductResponse response = productService.create(request);
+            @RequestParam("name") String name,
+            @RequestParam("description") String description,
+            @RequestParam("price") Double price,
+            @RequestParam("quantity") Integer quantity,
+            @RequestParam("category") Long categoryId,
+            @RequestParam("categorySlug") String categorySlug,
+            @RequestParam("photo") MultipartFile photo) {
+
+        log.info("Creating product with name: {}", name);
+
+        ProductResponse response = productService.create(name, description, price, quantity,categoryId,categorySlug,photo);
+
+
         return new ResponseEntity<>(response, HttpStatus.CREATED);
     }
 
@@ -50,6 +61,13 @@ public class productController {
 
         Page<ProductResponse> products = productService.search(keyword, page, size);
         return ResponseEntity.ok(products);
+    }
+
+    @GetMapping("/get-single-product/{id}")
+    public ResponseEntity<ProductResponse> getSingleProduct(@PathVariable(name = "id") Long productId){
+        ProductResponse product = productService.getSingleProduct(productId);
+
+        return ResponseEntity.ok(product);
     }
 
 
