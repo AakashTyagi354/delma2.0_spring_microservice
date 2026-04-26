@@ -1,15 +1,16 @@
 package com.delma.userservice.controller;
 
+import com.delma.common.dto.ApiResponse;
 import com.delma.userservice.client.DoctorClient;
 import com.delma.userservice.dto.DoctorResponseDTO;
-import com.delma.userservice.entity.User;
-import com.delma.userservice.response.ApiResponse;
+import com.delma.userservice.dto.UserResponse;
+
+
 import com.delma.userservice.service.UserService;
 import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -33,14 +34,14 @@ public class AdminController {
         doctorClient.approveDoctor(doctorId, request.getHeader("Authorization"));
 
         return ResponseEntity.ok(
-                ApiResponse.success(null, "Doctor application approved successfully")
+                ApiResponse.success("Doctor application approved successfully")
         );
     }
 
 
 
     // Reject doctor application
-    @PostMapping("/reject-doctors/{doctorId}")
+    @PutMapping("/reject-doctors/{doctorId}")
     public ResponseEntity<ApiResponse<String>> rejectDoctor(@PathVariable String doctorId) {
 //        String token = request.getHeader("Authorization");
         String res = doctorClient.rejectApplication(Long.valueOf(doctorId));
@@ -64,13 +65,13 @@ public class AdminController {
     public ResponseEntity<ApiResponse<Void>> addDoctorRole(@PathVariable Long userId) {
         userService.addRoleDoctor(userId);
         return ResponseEntity.ok(
-                ApiResponse.success(null, "Doctor role added to user successfully")
+                ApiResponse.success("Doctor role added to user successfully")
         );
     }
 
     @GetMapping("/getall-users")
-    public ResponseEntity<ApiResponse<List<User>>> getAllUsers(){
-            List<User> allUsers = userService.findAllUsers();
+    public ResponseEntity<ApiResponse<List<UserResponse>>> getAllUsers(){
+            List<UserResponse> allUsers = userService.findAllUsers();
 
             return ResponseEntity.ok(
                     ApiResponse.success(allUsers,"Fetching all the users from admin portal")

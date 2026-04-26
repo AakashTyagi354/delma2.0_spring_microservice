@@ -1,12 +1,12 @@
 package com.delma.userservice.controller;
 
+import com.delma.common.dto.ApiResponse;
 import com.delma.userservice.dto.LoginRequestDTO;
 import com.delma.userservice.dto.LoginResponseDTO;
 import com.delma.userservice.dto.SignupResponseDTO;
 import com.delma.userservice.entity.RefreshToken;
 import com.delma.userservice.entity.User;
 import com.delma.userservice.reposistory.UserReposistory;
-import com.delma.userservice.response.ApiResponse;
 import com.delma.userservice.response.AuthTokenResponse;
 import com.delma.userservice.security.AuthService;
 import com.delma.userservice.security.AuthUtil;
@@ -92,7 +92,7 @@ public class AuthController {
         }
 
         return ResponseEntity.ok(
-                ApiResponse.success("","Logged out successfully")
+                ApiResponse.success("Logged out successfully")
         );
 
     }

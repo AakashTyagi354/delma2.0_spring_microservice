@@ -1,9 +1,12 @@
 package com.delma.userservice.controller;
 
+import com.delma.common.dto.ApiResponse;
 import com.delma.userservice.client.DoctorClient;
 import com.delma.userservice.dto.DoctorResponseDTO;
+import com.delma.userservice.dto.UserResponse;
 import com.delma.userservice.entity.Doctor;
 import com.delma.userservice.entity.User;
+
 import com.delma.userservice.service.UserService;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
@@ -24,36 +27,28 @@ public class UserController {
     private final UserService userService;
     private final HttpServletRequest request;
 
-    @GetMapping("/test")
-    public String test(Authentication auth) {
-        log.info("UserID from headers: {}",request.getHeader("X-User-Id"));
-        System.out.println("Authenticated: {}"+ auth);
-        return "ok";
-    }
 
     @PostMapping
-    public User createUser(@RequestBody User user) {
-        return userService.createUser(user);
+    public ResponseEntity<ApiResponse<UserResponse>> createUser(@RequestBody User user) {
+        return ResponseEntity.ok(ApiResponse.success(userService.createUser(user),"User Created successfully"));
     }
 
     @GetMapping("/{id}")
-    public User getUser(@PathVariable Long id) {
-        return userService.getUserById(id);
+    public ResponseEntity<ApiResponse<UserResponse>> getUser(@PathVariable Long id) {
+        return ResponseEntity.ok(ApiResponse.success(userService.getUserById(id),"Getting single user for the provided userId"));
     }
 
     @PreAuthorize("hasRole('USER')")
     @PostMapping("/apply-doctor")
-    public ResponseEntity<String> applyDoctor(@RequestBody Doctor request, Authentication authentication){
+    public ResponseEntity<ApiResponse<Void>> applyDoctor(@RequestBody Doctor request, Authentication authentication){
         String email = authentication.getName();
         userService.applyDoctor(request, email);
-        return ResponseEntity.ok("Doctor application submitted successfully");
+        return ResponseEntity.ok(ApiResponse.success("Doctor application submitted successfully"));
     }
 
     @GetMapping("/doctors")
-    public ResponseEntity<List<DoctorResponseDTO>> getAllDoctors(){
-        log.info("Fetching all approved doctors");
-//        String token = request.getHeader("Authorization");
+    public ResponseEntity<ApiResponse<List<DoctorResponseDTO>>> getAllDoctors(){
         List<DoctorResponseDTO> allApprovedDoctors = doctorClient.getAllDoctors();
-        return ResponseEntity.ok(allApprovedDoctors);
+        return ResponseEntity.ok(ApiResponse.success(allApprovedDoctors,"Getting all approved doctors"));
     }
 }

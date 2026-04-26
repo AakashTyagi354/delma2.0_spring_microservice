@@ -1,18 +1,17 @@
 package com.delma.userservice.serviceimpl;
 
+import com.delma.common.exception.ResourceNotFoundException;
 import com.delma.userservice.Enum.Role;
-import com.delma.userservice.dto.DoctorResponseDTO;
+import com.delma.userservice.dto.UserResponse;
 import com.delma.userservice.entity.Doctor;
 import com.delma.userservice.entity.User;
 import com.delma.userservice.reposistory.UserReposistory;
 import com.delma.userservice.service.UserService;
-import lombok.AllArgsConstructor;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -20,13 +19,17 @@ public class UserServiceImpl implements UserService {
 
     private final UserReposistory userReposistory;
 
-    public User createUser(User user) {
-        return userReposistory.save(user);
+    @Override
+    @Transactional
+    public UserResponse createUser(User user) {
+        User newUser = userReposistory.save(user);
+        return toResponse(newUser);
     }
 
-    public User getUserById(Long id) {
-        return userReposistory.findById(id)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+    public UserResponse getUserById(Long id) {
+        User user =  userReposistory.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found for userId: "+id));
+        return toResponse(user);
     }
 
     @Override
@@ -34,20 +37,32 @@ public class UserServiceImpl implements UserService {
 
     }
 
+    @Override
+    @Transactional
     public void addRoleDoctor(Long userId) {
         User user = userReposistory.findById(userId)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("User not found for userId: " + userId));
 
         user.getRoles().add(Role.DOCTOR);  // assuming Role is your enum
         userReposistory.save(user);
     }
 
     @Override
-    public List<User> findAllUsers() {
-
-
-        return userReposistory.findByIsDoctorAndIsAdmin("false","false");
+    public List<UserResponse> findAllUsers() {
+       List<User> users =  userReposistory.findByIsDoctorAndIsAdmin("false","false");
+       return users.stream()
+               .map(this::toResponse)
+               .toList();
     }
 
+    private UserResponse toResponse(User user){
+        return UserResponse.builder()
+                .id(user.getId())
+                .email(user.getEmail())
+                .username(user.getUsername())
+                .roles(user.getRoles())
+                .build();
+
+    }
 
 }
