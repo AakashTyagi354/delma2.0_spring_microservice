@@ -20,9 +20,10 @@
 7. [Data Models](#7-data-models)
 8. [Caching Strategy](#8-caching-strategy)
 9. [Authentication & Security](#9-authentication--security)
-10. [Local Setup](#10-local-setup)
-11. [Tech Stack](#11-tech-stack)
-12. [Future Roadmap](#12-future-roadmap)
+10. [Engineering Challenges & Solutions](#10-engineering-challenges--solutions)
+11. [Local Setup](#11-local-setup)
+12. [Tech Stack](#12-tech-stack)
+13. [Future Roadmap](#13-future-roadmap)
 
 ---
 
@@ -930,7 +931,388 @@ Custom AES-256 encryption engine on top of ZEGOCLOUD:
 
 ---
 
-## 10. Local Setup
+## 10. Engineering Challenges & Solutions
+
+This section documents real engineering problems encountered while building Delma and how they were solved. These are the kinds of problems that come up in system design interviews.
+
+### 10.1 Race Condition: Double Booking Prevention
+
+#### The Problem
+
+The appointment booking flow contains a classic concurrency bug. The naive implementation has three steps separated in time:
+
+```java
+// Step 1 — READ
+DoctorSlot slot = slotRepository.findById(slotId).orElseThrow(...);
+
+// Step 2 — CHECK
+if (slot.getStatus().equals(SlotStatus.BOOKED)) {
+    throw new ConflictException("Slot already booked");
+}
+
+// Step 3 — WRITE
+slot.setStatus(SlotStatus.BOOKED);
+slotRepository.save(slot);
+```
+
+Between Step 1 and Step 3, there is a time gap — even if it is only milliseconds. When two patients click "Book" on the same slot at the same moment:
+
+```
+TIME →
+
+Patient A thread                    Patient B thread
+────────────────                    ────────────────
+1. findById(slotId)
+   → status = AVAILABLE ✅
+                                    2. findById(slotId)
+                                       → status = AVAILABLE ✅
+                                       (DB hasn't changed yet!)
+
+3. Status check passes ✅
+                                    4. Status check passes ✅
+
+5. save(slot) → BOOKED in DB ✅
+   appointment created ✅
+                                    6. save(slot) → BOOKED in DB 🔥
+                                       appointment created 🔥
+
+RESULT: Two appointments for the same slot!
+```
+
+This is called a **Time-of-Check to Time-of-Use (TOCTOU)** race condition. It exists in any system that does check-then-write without atomicity — flight booking, hotel reservations, ticketing systems, inventory management.
+
+#### Why @Transactional Alone Is Not Enough
+
+The default isolation level in Spring is `READ_COMMITTED`, which prevents reading uncommitted data but allows two concurrent transactions to read the same committed data and both write:
+
+```
+Patient A transaction:
+  reads slot → AVAILABLE
+  saves slot → BOOKED
+  commits ✅
+
+Patient B transaction (overlapping):
+  reads slot → AVAILABLE  ← reads BEFORE A commits
+  saves slot → BOOKED     ← also saves successfully
+  commits ✅              ← both succeed 💥
+```
+
+`SERIALIZABLE` isolation would prevent this but locks the entire table — too expensive for production.
+
+#### The Solution: Optimistic Locking with @Version
+
+**Add `@Version` to the entity:**
+```java
+@Entity
+public class DoctorSlot {
+    @Id
+    private Long id;
+
+    @Enumerated(EnumType.STRING)
+    private SlotStatus status;
+
+    @Version
+    private Long version;
+}
+```
+
+Hibernate automatically modifies every UPDATE on this table to include a version check:
+
+```sql
+-- Without @Version
+UPDATE doctor_slot SET status = 'BOOKED' WHERE id = 5
+
+-- With @Version (Hibernate adds version check automatically)
+UPDATE doctor_slot SET status = 'BOOKED', version = 2
+WHERE id = 5 AND version = 1
+```
+
+**The race condition with @Version:**
+```
+DB before: slot id=5, status=AVAILABLE, version=1
+
+Patient A thread                    Patient B thread
+────────────────                    ────────────────
+1. SELECT → version=1
+                                    2. SELECT → version=1
+
+3. Status check passes ✅
+                                    4. Status check passes ✅
+
+5. UPDATE ... WHERE id=5
+   AND version=1
+   → 1 row affected ✅
+   → version is now 2
+                                    6. UPDATE ... WHERE id=5
+                                       AND version=1
+                                       → 0 rows affected 🔥
+                                       (DB has version=2 now)
+                                       → OptimisticLockException
+                                       → Transaction rolls back
+
+RESULT: Only ONE appointment created ✅
+```
+
+**Convert the exception to a clean 409 response:**
+```java
+@RestControllerAdvice
+public class AppointmentExceptionHandler {
+
+    @ExceptionHandler(ObjectOptimisticLockingFailureException.class)
+    public ResponseEntity<ApiResponse<Void>> handleOptimisticLock(
+            ObjectOptimisticLockingFailureException ex) {
+        log.warn("Concurrent booking conflict: {}", ex.getMessage());
+        return ResponseEntity
+                .status(HttpStatus.CONFLICT)
+                .body(ApiResponse.failure(
+                    "This slot was just booked by someone else. Please select another slot.",
+                    "SLOT_CONFLICT"
+                ));
+    }
+}
+```
+
+#### Optimistic vs Pessimistic Locking — The Tradeoff
+
+| | Optimistic (used in Delma) | Pessimistic |
+|---|---|---|
+| **Strategy** | Assume conflicts are rare | Assume conflicts will happen |
+| **Mechanism** | Version check at write time | Lock row at read time |
+| **SQL** | `UPDATE ... WHERE version=?` | `SELECT ... FOR UPDATE` |
+| **Read performance** | Fast (no locking) | Slow (holds lock) |
+| **Best for** | Read-heavy workloads | Write-heavy contention |
+| **Booking systems?** | ✅ Optimistic | ❌ Too expensive |
+
+For Delma, optimistic locking is the right choice: most users browse slots without booking, actual simultaneous bookings of the same slot are rare, and we want read operations (slot listing) to remain fast.
+
+#### Three Layers Working Together
+
+The solution requires three components working in unison:
+
+1. **`@Version`** on `DoctorSlot` entity — enables version checking
+2. **`@Transactional`** on `bookAppointment()` — ensures rollback on conflict
+3. **`AppointmentExceptionHandler`** — converts exception to clean 409 response
+
+```
+bookAppointment() called
+        │
+        ▼
+@Transactional begins
+        │
+        ▼
+findById → SELECT id, status, version FROM doctor_slot WHERE id=?
+        │
+        ▼
+slotRepository.save(slot)
+→ UPDATE doctor_slot SET status='BOOKED', version=2
+  WHERE id=? AND version=1
+  ├─ 1 row updated → success, continue
+  └─ 0 rows updated → ObjectOptimisticLockingFailureException
+                    → @Transactional rolls back
+                    → AppointmentExceptionHandler returns 409
+```
+
+---
+
+### 10.2 Cache Invalidation Strategy
+
+#### The Problem
+
+After adding Redis caching to doctor listings (`@Cacheable` on `getAllDoctors`), a stale data risk emerged. When an admin approves a new doctor, the cached "all approved doctors" list still shows the old data — patients could browse for several minutes without seeing the new doctor.
+
+#### The Solution: Two-Layer Defense
+
+**Layer 1 — Reactive eviction with `@CacheEvict`:**
+```java
+@CacheEvict(value = "doctors", allEntries = true)
+public void approveApplication(Long id) {
+    // ... approval logic
+}
+```
+
+When `approveApplication` is called, Spring deletes ALL entries under the `doctors` cache. Next read hits the database and fresh data is cached.
+
+**Layer 2 — Defensive TTL of 10 minutes:**
+```java
+RedisCacheConfiguration.defaultCacheConfig()
+    .entryTtl(Duration.ofMinutes(10))
+```
+
+Even if cache eviction somehow fails — Redis is briefly unavailable, a bug skips the eviction, or someone updates the database directly — the cache automatically expires after 10 minutes.
+
+#### Why Both?
+
+This is **defense in depth** — never rely on a single mechanism for correctness in distributed systems.
+
+| Mechanism | When | Purpose |
+|-----------|------|---------|
+| `@CacheEvict` | On every approve/reject call | Primary — immediate freshness |
+| TTL (10 min) | Every 10 min automatically | Safety net for failure scenarios |
+
+The system has guaranteed bounded staleness: data is at most 10 minutes old in the worst case, but typically fresh within milliseconds.
+
+---
+
+### 10.3 Service Discovery vs Hardcoded URLs
+
+#### The Problem
+
+Initial implementation used hardcoded URLs in Feign clients:
+```java
+@FeignClient(name = "doctorservice", url = "http://localhost:8010")
+```
+
+This created several issues:
+- Cannot scale horizontally — only one address known
+- Service moves break the system
+- Cannot do load balancing
+- Different environments (dev, staging, prod) need code changes
+
+#### The Solution: Eureka Service Discovery
+
+Removed hardcoded URLs and let Eureka resolve at runtime:
+```java
+@FeignClient(name = "doctorservice")  // No url
+```
+
+**How it works:**
+```
+1. doctorservice instance starts on port 8010
+   → registers with Eureka: "I am doctorservice at 192.168.1.5:8010"
+
+2. userservice needs to call doctorservice
+   → Feign asks Eureka: "Where is doctorservice?"
+   → Eureka returns: "192.168.1.5:8010"
+   → Feign makes the HTTP call
+
+3. If 3 instances of doctorservice are running:
+   → Eureka returns different addresses round-robin
+   → Load balanced automatically
+
+4. If an instance crashes:
+   → Eureka stops sending traffic to it (heartbeat timeout)
+   → Other instances continue serving requests
+```
+
+The same pattern is used in the gateway with `lb://servicename` URIs — `lb` means "load balanced via service discovery."
+
+---
+
+### 10.4 Spring Cloud Gateway 5.0 Configuration Migration
+
+#### The Problem
+
+After upgrading to Spring Cloud 2025.x (Gateway 5.0), all routes silently stopped working. Gateway started successfully, no errors in logs, but every request returned 404.
+
+#### Root Cause
+
+Spring Cloud Gateway 5.0 introduced support for both reactive and servlet-based gateways, requiring a new namespace for configuration:
+
+```yaml
+# Old (Spring Cloud 2024.x and earlier) — silently ignored in 5.0
+spring:
+  cloud:
+    gateway:
+      routes: [...]
+
+# New (Spring Cloud 2025.x / Gateway 5.0) — required
+spring:
+  cloud:
+    gateway:
+      server:
+        webflux:
+          routes: [...]
+```
+
+#### Why It Was Hard To Diagnose
+
+This was a **silent misconfiguration** — the worst kind of bug. No exception, no warning, no error log. The system appeared healthy:
+- Gateway started successfully ✅
+- Eureka registration worked ✅
+- Route predicate factories logged as loaded ✅
+- Requests reached the gateway ✅
+
+But every request returned 404 because routes were registered under the wrong configuration key.
+
+#### Lessons Learned
+
+When upgrading major versions of any framework, always read the migration guide first. Spring Cloud, Spring Boot, Hibernate — all publish migration guides between major versions that list every breaking change. Ten minutes of reading saves hours of debugging.
+
+---
+
+### 10.5 Inter-Service Contract Evolution
+
+#### The Problem
+
+After migrating doctorservice to return `ApiResponse<List<DoctorResponse>>` instead of raw `List<DoctorResponse>`, the userservice Feign client started failing with deserialization errors:
+
+```
+Cannot construct instance of `ApiResponse` (no Creators, like default 
+constructor, exist): cannot deserialize from Object value
+```
+
+#### Two Issues Combined
+
+**Issue 1 — Mismatched return type:**
+```java
+// userservice's Feign client expected:
+List<DoctorResponse> getAllDoctors();
+
+// But doctorservice now returns:
+ApiResponse<List<DoctorResponse>> getAllDoctors();
+```
+
+**Issue 2 — `ApiResponse` had no Jackson constructor:**
+```java
+// ApiResponse.java in common-lib
+public class ApiResponse<T> {
+    private final Boolean success;
+    private final String message;
+    private final T data;
+
+    private ApiResponse(...) { ... }  // private — Jackson can't access
+}
+```
+
+#### The Solution
+
+**Update Feign client signature:**
+```java
+@FeignClient(name = "doctorservice")
+public interface DoctorClient {
+    @GetMapping("/api/v1/doctor/all")
+    ApiResponse<List<DoctorResponse>> getAllDoctors();
+}
+```
+
+**Add `@JsonCreator` to ApiResponse:**
+```java
+@JsonCreator
+private ApiResponse(
+    @JsonProperty("success") Boolean success,
+    @JsonProperty("message") String message,
+    @JsonProperty("data") T data,
+    @JsonProperty("errorCode") String errorCode) {
+    // ...
+}
+```
+
+`@JsonCreator` tells Jackson to use this constructor for deserialization. Without it, Jackson cannot construct the object since the constructor is private.
+
+#### Lesson: Contract Changes Cascade
+
+In microservices, changing a service's response shape affects every other service that consumes it. A "small refactor" in one service breaks N other services. Strategies to manage this:
+
+1. **API versioning** — `/api/v1/doctor/all` vs `/api/v2/doctor/all`
+2. **Backward-compatible changes** — add fields, never remove
+3. **Coordinated deployment** — deploy producer + consumers together
+4. **Contract testing** — Pact, Spring Cloud Contract
+
+For Delma, since it's a personal project, coordinated deployment is sufficient. In a real product environment with multiple teams, contract testing becomes essential.
+
+---
+
+## 11. Local Setup
 
 ### Prerequisites
 - **Java 21** (LTS — required, Java 25 may have Lombok issues)
@@ -1002,7 +1384,7 @@ export RAZORPAY_KEY_SECRET=<your-secret>
 
 ---
 
-## 11. Tech Stack
+## 12. Tech Stack
 
 ### Backend
 | Layer | Technology | Version |
@@ -1039,7 +1421,7 @@ export RAZORPAY_KEY_SECRET=<your-secret>
 
 ---
 
-## 12. Future Roadmap
+## 13. Future Roadmap
 
 ### Short-term Improvements
 - [ ] Fix double-booking race condition (optimistic locking on `DoctorSlot`)
