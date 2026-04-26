@@ -2,6 +2,7 @@ package com.delma.appointmentservice.controller;
 
 
 import com.delma.appointmentservice.service.SlotService;
+import com.delma.common.dto.ApiResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
@@ -20,7 +21,7 @@ public class DoctorSlotController {
     private final SlotService slotService;
 
     @PostMapping("/create")
-    public ResponseEntity<String> createSlots(
+    public ResponseEntity<ApiResponse<Void>> createSlots(
             @RequestParam Long doctorId,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.TIME) LocalTime startTime,
@@ -28,7 +29,7 @@ public class DoctorSlotController {
             @RequestParam int slotDurationMinutes
     ) {
         slotService.createSlots(doctorId, date, startTime, endTime, slotDurationMinutes);
-        return ResponseEntity.ok("Slots created successfully");
+        return ResponseEntity.ok(ApiResponse.success("Slots created successfully"));
 
     }
 }

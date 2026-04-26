@@ -1,5 +1,6 @@
 package com.delma.userservice.security;
 
+import com.delma.common.exception.ResourceNotFoundException;
 import com.delma.userservice.Enum.Role;
 import com.delma.userservice.config.AppConfig;
 import com.delma.userservice.dto.LoginRequestDTO;
@@ -58,7 +59,7 @@ public class AuthService {
         log.info("User {} authenticated successfully", userDetails.getUsername());
         User user = userReposistory
                 .findByEmail(userDetails.getUsername())
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("User not found for id: "+userDetails.getUsername()));
         // Here you would typically generate a JWT or session token
         log.info("user: {}",user);
         String token = authUtil.generateAccessToken(user);
@@ -93,7 +94,7 @@ public class AuthService {
 
         userReposistory.save(user);
 
-        return new SignupResponseDTO(user.getId(), user.getName(), user.getEmail());
+        return new SignupResponseDTO(user.getName(), user.getEmail());
     }
 
     public  LoginResponseDTO adminLogin(LoginRequestDTO loginRequest) throws AccessDeniedException {
@@ -105,8 +106,13 @@ public class AuthService {
                 )
         );
 
-        // 2️⃣ Get authenticated principal
-        User authenticatedUser = (User) authentication.getPrincipal();
+
+
+        UserDetails userDetails =  (UserDetails) authentication.getPrincipal();
+        User authenticatedUser = userReposistory
+                .findByEmail(userDetails.getUsername())
+                .orElseThrow(() -> new ResourceNotFoundException("User not found: " + loginRequest.getEmail()));
+
 
         // 3️⃣ Check ADMIN role AFTER authentication
         if (!authenticatedUser.getRoles().contains(Role.ADMIN)) {

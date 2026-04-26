@@ -4,6 +4,7 @@ import com.delma.appointmentservice.entity.DoctorSlot;
 import com.delma.appointmentservice.repository.DoctorSlotRepository;
 import com.delma.appointmentservice.service.SlotService;
 import com.delma.appointmentservice.utility.SlotStatus;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -20,6 +21,7 @@ public class SlotServiceImpl implements SlotService {
 //    /Just pre-generates slots for a doctor on a given day.
 
     @Override
+    @Transactional
     public void createSlots(Long doctorId, LocalDate date, LocalTime startTime, LocalTime endTime, int slotDurationMinutes) {
         LocalTime currentTime = startTime;
         while (!currentTime.isAfter(endTime.minusMinutes(slotDurationMinutes))) {

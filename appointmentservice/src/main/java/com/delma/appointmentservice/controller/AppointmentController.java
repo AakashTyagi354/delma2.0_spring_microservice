@@ -1,9 +1,11 @@
 package com.delma.appointmentservice.controller;
 
+import com.delma.appointmentservice.dto.AppointmentResponse;
+import com.delma.appointmentservice.dto.DoctorSlotResponse;
 import com.delma.appointmentservice.entity.Appointment;
 import com.delma.appointmentservice.entity.DoctorSlot;
-import com.delma.appointmentservice.response.ApiResponse;
 import com.delma.appointmentservice.service.AppointmentService;
+import com.delma.common.dto.ApiResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -11,7 +13,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
-import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Map;
 
@@ -23,40 +24,39 @@ public class AppointmentController {
     private final AppointmentService appointmentService;
 
     @GetMapping("/slots")
-    public List<DoctorSlot> getAvailableSlots(@RequestParam Long doctorId,
-                                              @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
-        log.info("Received request for available slots for doctorId: {} on date: {}", doctorId, date);
-        return appointmentService.getAvailableSlots(doctorId, date);
+    public ResponseEntity<ApiResponse<List<DoctorSlotResponse>>> getAvailableSlots(@RequestParam Long doctorId,
+                                                                                 @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
+        return ResponseEntity.ok(ApiResponse.success(appointmentService.getAvailableSlots(doctorId, date),"All the slots as requested my provided Filters"));
     }
 
     @PostMapping("/book")
-    public ResponseEntity<ApiResponse<Appointment>> bookAppointment(@RequestParam Long userId,
-                                                                    @RequestParam Long doctorId,
-                                                                    @RequestParam Long slotId) {
-        Appointment app = appointmentService.bookAppointment(userId, doctorId, slotId);
+    public ResponseEntity<ApiResponse<AppointmentResponse>> bookAppointment(@RequestParam Long userId,
+                                                                            @RequestParam Long doctorId,
+                                                                            @RequestParam Long slotId) {
+        AppointmentResponse app = appointmentService.bookAppointment(userId, doctorId, slotId);
         return ResponseEntity.ok(
                 ApiResponse.success(app, "Appointment booked successfully")
         );
     }
 
     @GetMapping("/user")
-    public List<Appointment> getAppointmentsForUser(@RequestParam Long userId) {
-        return appointmentService.getAppointmentsForUser(userId);
+    public ResponseEntity<ApiResponse<List<AppointmentResponse>>> getAppointmentsForUser(@RequestParam Long userId) {
+        return ResponseEntity.ok(ApiResponse.success(appointmentService.getAppointmentsForUser(userId),"Getting appointment for a User"));
     }
 
     @GetMapping("/doctor")
-    public List<Appointment> getAppointmentsForDoctore(@RequestParam Long doctorId) {
-        return appointmentService.getAppointmentForDoctors(doctorId);
+    public ResponseEntity<ApiResponse<List<AppointmentResponse>>> getAppointmentsForDoctore(@RequestParam Long doctorId) {
+        return ResponseEntity.ok(ApiResponse.success(appointmentService.getAppointmentForDoctors(doctorId),"Getting appointment for a doctor"));
     }
 
     @GetMapping("/video-token/{appointmentId}")
-    public ResponseEntity<?> getToken(
+    public ResponseEntity<ApiResponse<String>> getToken(
             @PathVariable Long appointmentId,
             @RequestHeader("X-User-Id") String userId,
             @RequestHeader("X-Roles") String roles) {
 
         String token = appointmentService.getMeetingToken(appointmentId, userId, roles);
-        return ResponseEntity.ok(Map.of("token", token));
+        return ResponseEntity.ok(ApiResponse.success(token,"Token for appointment"));
     }
 
 
