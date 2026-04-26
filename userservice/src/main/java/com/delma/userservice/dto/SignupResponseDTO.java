@@ -11,7 +11,7 @@ import lombok.RequiredArgsConstructor;
 @NoArgsConstructor
 public class SignupResponseDTO {
 
-    private Long id;
+
     private String Name;
     private String email;
 

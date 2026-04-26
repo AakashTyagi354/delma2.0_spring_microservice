@@ -76,6 +76,9 @@ public class GlobalExceptionHandler {
                     .body(ApiResponse.success(errors,"Validation failed"));
     }
 
+
+
+
     /*
     * Safety net - Catches anything not handled above
     *  NEVER return ex.getMessage() here — it can leak DB names,

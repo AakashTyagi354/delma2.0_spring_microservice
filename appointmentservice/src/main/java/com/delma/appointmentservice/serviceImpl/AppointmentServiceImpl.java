@@ -1,19 +1,24 @@
 package com.delma.appointmentservice.serviceImpl;
 
+import com.delma.appointmentservice.dto.AppointmentResponse;
+import com.delma.appointmentservice.dto.DoctorSlotResponse;
 import com.delma.appointmentservice.entity.Appointment;
 import com.delma.appointmentservice.entity.DoctorSlot;
 import com.delma.appointmentservice.kafka.NotificationEvent;
 import com.delma.appointmentservice.kafka.NotificationProducer;
 import com.delma.appointmentservice.repository.AppointmentRepository;
 import com.delma.appointmentservice.repository.DoctorSlotRepository;
-import com.delma.appointmentservice.response.ApiResponse;
 import com.delma.appointmentservice.service.AppointmentService;
 import com.delma.appointmentservice.utility.AppointmentStatus;
 import com.delma.appointmentservice.utility.SlotStatus;
 import com.delma.appointmentservice.utility.ZegoTokenUtils;
+import com.delma.common.exception.BadRequestException;
+import com.delma.common.exception.ConflictException;
+import com.delma.common.exception.ResourceNotFoundException;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.kafka.common.errors.ResourceNotFoundException;
+
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -33,12 +38,14 @@ public class AppointmentServiceImpl implements AppointmentService {
     @Value("${zego.app.id}") private long appId;
     @Value("${zego.server.secret}") private String serverSecret;
 
-    public Appointment bookAppointment(Long userId, Long doctorId, Long slotId){
+    @Override
+    @Transactional
+    public AppointmentResponse bookAppointment(Long userId, Long doctorId, Long slotId){
         DoctorSlot slot = slotRepository.findById(slotId)
-                .orElseThrow(() -> new RuntimeException("Slot not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Slot not found for slotId: "+slotId));
 
         Boolean isBooked = appointmentRepository.existsByDoctorIdAndSlotIdAndStatus(doctorId,slotId, AppointmentStatus.BOOKED);
-        if(isBooked || slot.getStatus().equals(SlotStatus.BOOKED)) throw new RuntimeException("Slot already booked");
+        if(isBooked || slot.getStatus().equals(SlotStatus.BOOKED)) throw new ConflictException("Slot already booked");
 
         Appointment appointment = Appointment.builder()
                 .doctorId(doctorId)
@@ -61,17 +68,22 @@ public class AppointmentServiceImpl implements AppointmentService {
         );
         notificationProducer.send(event);
 
-        return bookedAppointmnet;
+        return toResponse(bookedAppointmnet);
     }
 
 
-    public List<DoctorSlot> getAvailableSlots(Long doctorId, LocalDate date) {
+    public List<DoctorSlotResponse> getAvailableSlots(Long doctorId, LocalDate date) {
         log.info("Fetching available slots for doctorId: {} on date: {}", doctorId, date);
-        return slotRepository.findByDoctorIdAndDateAndStatus(doctorId, date, SlotStatus.AVAILABLE);
+
+        return slotRepository.findByDoctorIdAndDateAndStatus(doctorId, date, SlotStatus.AVAILABLE).stream()
+                .map(this::toResponse)
+                .toList();
     }
 
-    public List<Appointment> getAppointmentsForUser(Long userId) {
-        return appointmentRepository.findByUserId(userId);
+    public List<AppointmentResponse> getAppointmentsForUser(Long userId) {
+        return appointmentRepository.findByUserId(userId).stream()
+                .map(this::toResponse)
+                .toList();
     }
 
 
@@ -79,9 +91,9 @@ public class AppointmentServiceImpl implements AppointmentService {
     public String getMeetingToken(Long appointmentId, String userId, String rolesHeaders) {
         log.info("Inside getMeethingToken userId: {} appoitmentId: {}, roles: {}",userId,appointmentId,rolesHeaders);
         List<String> roles = Arrays.asList(rolesHeaders.split(","));
-        Appointment appt = appointmentRepository.findById(appointmentId).orElseThrow(() -> new ResourceNotFoundException("Appointment not found"));
+        Appointment appt = appointmentRepository.findById(appointmentId).orElseThrow(() -> new ResourceNotFoundException("Appointment not found for userId: " +userId ));
 
-        boolean isAuthorized = false;
+
 //        if(roles.contains("DOCTOR") && !appt.getDoctorId().equals(userId)){
 //            throw new RuntimeException("Unauthorized: User does not have access to this appointment.");
 //        }else (roles.contains("USER") && !appt.getUserId().equals(userId)){
@@ -101,16 +113,40 @@ public class AppointmentServiceImpl implements AppointmentService {
             return finalTokenForFrontend;
 
 
-        }catch (Exception e){
-            throw new RuntimeException("Error generating video token");
+        }catch (Exception e) {
+            log.error("Error generating video token for appointmentId: {}", appointmentId, e);
+            throw new BadRequestException("Error generating video token for appointment: " + appointmentId);
         }
 
 
     }
 
     @Override
-    public List<Appointment> getAppointmentForDoctors(Long doctorId) {
-        return appointmentRepository.findByDoctorIdAndStatus(doctorId,AppointmentStatus.BOOKED);
+    public List<AppointmentResponse> getAppointmentForDoctors(Long doctorId) {
+        return appointmentRepository.findByDoctorIdAndStatus(doctorId,AppointmentStatus.BOOKED)
+                .stream()
+                .map(this::toResponse)
+                .toList();
+    }
+
+    private DoctorSlotResponse toResponse(DoctorSlot ds){
+        return DoctorSlotResponse.builder()
+                .doctorId(ds.getDoctorId())
+                .date(ds.getDate())
+                .status(ds.getStatus())
+                .startTime(ds.getStartTime())
+                .endTime(ds.getEndTime())
+                .build();
+
+    }
+
+    private AppointmentResponse toResponse(Appointment as){
+        return AppointmentResponse.builder()
+                .userId(as.getUserId())
+                .doctorId(as.getDoctorId())
+                .slotId(as.getSlotId())
+                .status(as.getStatus())
+                .build();
     }
 
 

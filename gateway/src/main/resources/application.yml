@@ -75,6 +75,18 @@ eureka:
   instance:
     prefer-ip-address: true
 
+
+management:
+  server:
+    port: 9090
+  endpoints:
+    web:
+      exposure:
+        include: health,info,gateway
+  endpoint:
+    health:
+      show-details: always
+
 jwt:
   secret: Z0ZqQm1nQ0tZQ1N2R3p3VjVnQ0hFZ3pMZ1R2aD...
 

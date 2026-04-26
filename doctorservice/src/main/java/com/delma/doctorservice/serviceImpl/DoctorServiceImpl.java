@@ -42,6 +42,7 @@ public class DoctorServiceImpl implements DoctorService {
         log.info("Doctor application received for userId: {}", userId);
 
 
+
         boolean exists = doctorRepository.existsByUserIdAndStatus(userId, ApplicationStatus.PENDING);
         if (exists) {
             throw new ConflictException("A pending application already exists for user: " + userId);
