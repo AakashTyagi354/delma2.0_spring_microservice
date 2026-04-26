@@ -1,8 +1,11 @@
 package com.delma.documentservice.serviceImpl;
 
+import com.delma.common.exception.ResourceNotFoundException;
 import com.delma.documentservice.entity.Document;
 import com.delma.documentservice.repository.DocumentRepository;
+import com.delma.documentservice.response.DocumentResponse;
 import com.delma.documentservice.service.DocumentService;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -17,7 +20,6 @@ import software.amazon.awssdk.services.s3.presigner.S3Presigner;
 import software.amazon.awssdk.services.s3.presigner.model.GetObjectPresignRequest;
 
 import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Duration;
@@ -37,14 +39,19 @@ public class DocumentServiceImpl implements DocumentService {
     private final S3Presigner s3Presigner;
 
     @Override
-    public List<Document> getDocumentsByUser(String userId) {
-        return documentRepository.findByUserId(userId);
+    public List<DocumentResponse> getDocumentsByUser(String userId) {
+        List<Document> documents = documentRepository.findByUserId(userId);
+        documents.forEach(doc -> doc.setUrl(getPresignedUrl(doc.getFilePath())));
+        return documents.stream()
+                .map(this::toResponse)
+                .toList();
     }
 
     @Override
+    @Transactional
     public void deleteDocumentFromS3(Long id) {
         Document doc = documentRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Document not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Document not found for the given Id: "+id));
 
         DeleteObjectRequest deleteObjectRequest = DeleteObjectRequest.builder()
                 .bucket(bucketName)
@@ -58,7 +65,8 @@ public class DocumentServiceImpl implements DocumentService {
     }
 
     @Override
-    public Document uploadDocument(MultipartFile file, String userId) throws IOException {
+    @Transactional
+    public DocumentResponse uploadDocument(MultipartFile file, String userId) throws IOException {
         log.info("Uploading document for user: {}", userId);
         String fileName = System.currentTimeMillis() + "_" + file.getOriginalFilename();
 
@@ -81,11 +89,13 @@ public class DocumentServiceImpl implements DocumentService {
                 .filePath(fileName)
                 .build();
 
-        return documentRepository.save(doc);
+        Document newDocument = documentRepository.save(doc);
+        return toResponse(newDocument);
 
     }
 
-    public String getPresignedUrl(String fileName){
+
+    private String getPresignedUrl(String fileName){
 
 
         GetObjectRequest getObjectRequest = GetObjectRequest.builder()
@@ -98,9 +108,17 @@ public class DocumentServiceImpl implements DocumentService {
                 .getObjectRequest(getObjectRequest)
                 .build();
 
-//        return presigner.presignGetObject(presignRequest).url().toString();
 
         return s3Presigner.presignGetObject(presignRequest).url().toString();
 
+    }
+
+    private DocumentResponse toResponse(Document doc){
+        return DocumentResponse.builder()
+                .userId(doc.getUserId())
+                .url(doc.getUrl())
+                .name(doc.getName())
+                .type(doc.getType())
+                .build();
     }
 }
