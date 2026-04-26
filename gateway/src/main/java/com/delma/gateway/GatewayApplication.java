@@ -3,10 +3,7 @@ package com.delma.gateway;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
-@SpringBootApplication(scanBasePackages = {
-        "com.delma.gateway",
-        "com.delma.common"
-})
+@SpringBootApplication()
 public class GatewayApplication {
 
 	public static void main(String[] args) {

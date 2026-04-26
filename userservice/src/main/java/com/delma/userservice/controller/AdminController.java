@@ -42,11 +42,11 @@ public class AdminController {
 
     // Reject doctor application
     @PutMapping("/reject-doctors/{doctorId}")
-    public ResponseEntity<ApiResponse<String>> rejectDoctor(@PathVariable String doctorId) {
+    public ResponseEntity<ApiResponse<Void>> rejectDoctor(@PathVariable String doctorId) {
 //        String token = request.getHeader("Authorization");
-        String res = doctorClient.rejectApplication(Long.valueOf(doctorId));
+        ApiResponse<Void> res = doctorClient.rejectApplication(Long.valueOf(doctorId));
         return ResponseEntity.ok(
-                ApiResponse.success(res, "Doctor application rejected successfully")
+                ApiResponse.success(res.getData(), "Doctor application rejected successfully")
         );
     }
 
@@ -54,7 +54,7 @@ public class AdminController {
     @GetMapping("/pending-doctors")
     public ResponseEntity<ApiResponse<List<DoctorResponseDTO>>> getPendingDoctors() {
 //        String token = request.getHeader("Authorization");
-        List<DoctorResponseDTO> pending = doctorClient.getPendingApplications();
+        List<DoctorResponseDTO> pending = doctorClient.getPendingApplications().getData();
         return ResponseEntity.ok(
                 ApiResponse.success(pending, "Fetched pending doctor applications successfully")
         );

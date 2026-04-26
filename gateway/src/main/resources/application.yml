@@ -2,73 +2,66 @@ server:
   port: 8089
 
 spring:
+  main:
+    web-application-type: reactive
   application:
     name: gateway
-
   cloud:
     gateway:
-      globalcors:
-        add-to-simple-url-handler-mapping: true
-        corsConfigurations:
-          '[/**]':
-            allowedOrigins:
-              - "http://localhost:3000"
-            allowedMethods:
-              - GET
-              - POST
-              - PUT
-              - DELETE
-              - OPTIONS
-            allowedHeaders:
-              - "*"
-            allowCredentials: true
-
-      routes:
-        - id: paymentservice
-          uri: lb://paymentservice
-          predicates:
-            - Path=/api/v1/payments/**
-
-        - id: userservice
-          uri: lb://userservice
-          predicates:
-            - Path=/api/v1/admin/**, /auth/**, /api/users/**
-
-        - id: doctorservice
-          uri: lb://doctorservice
-          predicates:
-            - Path=/api/v1/doctor/**
-
-        - id: appointmentservice
-          uri: lb://appointmentservice
-          predicates:
-            - Path=/api/v1/slots/**, /api/v1/appointments/**
-
-        - id: categoryservice
-          uri: lb://categoryservice
-          predicates:
-            - Path=/api/v1/category/**
-
-        - id: productservice
-          uri: lb://productservice
-          predicates:
-            - Path=/api/v1/product/**
-
-        - id: notificationservice
-          uri: lb://notificationservice
-          predicates:
-            - Path=/api/v1/notifications/**
-
-        - id: documentservice
-          uri: lb://documentservice
-          predicates:
-            - Path=/api/v1/documents/**
-
-        - id: orderservice
-          uri: lb://orderservice
-          predicates:
-            - Path=/api/v1/orders/**
-
+      server:
+        webflux:
+          globalcors:
+            add-to-simple-url-handler-mapping: true
+            corsConfigurations:
+              '[/**]':
+                allowedOrigins:
+                  - "http://localhost:3000"
+                allowedMethods:
+                  - GET
+                  - POST
+                  - PUT
+                  - DELETE
+                  - OPTIONS
+                allowedHeaders:
+                  - "*"
+                allowCredentials: true
+          routes:
+            - id: userservice
+              uri: lb://userservice
+              predicates:
+                - Path=/api/v1/admin/**,/auth/**,/api/users/**
+            - id: doctorservice
+              uri: lb://doctorservice
+              predicates:
+                - Path=/api/v1/doctor/**
+            - id: appointmentservice
+              uri: lb://appointmentservice
+              predicates:
+                - Path=/api/v1/slots/**,/api/v1/appointments/**
+            - id: categoryservice
+              uri: lb://categoryservice
+              predicates:
+                - Path=/api/v1/category/**
+            - id: productservice
+              uri: lb://productservice
+              predicates:
+                - Path=/api/v1/product/**
+            - id: notificationservice
+              uri: lb://notificationservice
+              predicates:
+                - Path=/api/v1/notifications/**
+            - id: documentservice
+              uri: lb://documentservice
+              predicates:
+                - Path=/api/v1/documents/**
+            - id: orderservice
+              uri: lb://orderservice
+              predicates:
+                - Path=/api/v1/orders/**
+            - id: paymentservice
+              uri: lb://paymentservice
+              predicates:
+                - Path=/api/v1/payments/**
 
 
 
@@ -88,3 +81,4 @@ jwt:
 logging:
   level:
     org.springframework.cloud.gateway: DEBUG
+    org.springframework.cloud.loadbalancer: DEBUG

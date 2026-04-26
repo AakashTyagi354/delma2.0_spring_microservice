@@ -48,7 +48,7 @@ public class UserController {
 
     @GetMapping("/doctors")
     public ResponseEntity<ApiResponse<List<DoctorResponseDTO>>> getAllDoctors(){
-        List<DoctorResponseDTO> allApprovedDoctors = doctorClient.getAllDoctors();
-        return ResponseEntity.ok(ApiResponse.success(allApprovedDoctors,"Getting all approved doctors"));
+        ApiResponse<List<DoctorResponseDTO>> allApprovedDoctors = doctorClient.getAllDoctors();
+        return ResponseEntity.ok(ApiResponse.success(allApprovedDoctors.getData(),"Getting all approved doctors"));
     }
 }

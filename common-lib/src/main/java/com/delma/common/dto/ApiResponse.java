@@ -1,5 +1,6 @@
 package com.delma.common.dto;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.Getter;
 
@@ -22,6 +23,10 @@ public class ApiResponse<T> {
     private final T data;
     private final String errorCode;
 
+    // ADDED: @JsonCreator tells Jackson to use this constructor for deserialization
+    // @JsonProperty maps each JSON field name to the constructor parameter
+    // Without this, Jackson sees a private constructor with no way to call it
+    @JsonCreator
     private ApiResponse(Boolean success,String message,T data,String errorCode){
         this.success = success;
         this.errorCode = errorCode;

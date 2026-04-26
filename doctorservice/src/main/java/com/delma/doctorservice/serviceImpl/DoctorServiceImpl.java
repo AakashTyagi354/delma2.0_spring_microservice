@@ -15,6 +15,8 @@ import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.common.errors.ResourceNotFoundException;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.dao.DataAccessException;
 import org.springframework.stereotype.Service;
 
@@ -60,7 +62,16 @@ public class DoctorServiceImpl implements DoctorService {
 
     @Override
     @Transactional
+    @CacheEvict(value = "doctors",allEntries = true)
     public void approveApplication(Long userId) {
+         /*
+     LESSON — Why allEntries = true here:
+     When a doctor gets approved, TWO cached lists become stale:
+     - "doctors::all" (approved list gains one entry)
+     - "doctors::pending" (pending list loses one entry)
+     allEntries = true clears ALL entries under "doctors" cache.
+     Next read will hit DB and get fresh data.
+    */
         Doctor app = doctorRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("Doctor application not found with id: " + userId));
 
@@ -83,12 +94,13 @@ public class DoctorServiceImpl implements DoctorService {
 
     @Override
     @Transactional
+    @CacheEvict(value = "doctors", allEntries = true)
     public void rejectApplication(Long applicationId) {
         Doctor app = doctorRepository.findById(applicationId)
                 .orElseThrow(() -> new ResourceNotFoundException("Doctor application not found with id: " + applicationId));
         app.setStatus(ApplicationStatus.REJECTED);
         doctorRepository.save(app);
-        log.info("Doctor application rejected for id: {}", applicationId);
+        log.info("Doctor rejected and cache evicted for id: {}", applicationId);
     }
 
     @Override
@@ -100,9 +112,19 @@ public class DoctorServiceImpl implements DoctorService {
     }
 
     @Override
+    @Cacheable(value = "doctors",key = "'all'")
     public List<DoctorResponse> getAllDoctors() {
-        // FIXED: removed null check — Spring Data JPA NEVER returns null from findAll queries
-        // It always returns an empty list [] if nothing is found
+        /*
+     LESSON — How @Cacheable works:
+     1. Spring checks Redis for key "doctors::all"
+     2. If found → return cached value immediately, skip method body
+     3. If not found → execute method, store result in Redis, return result
+
+     The method body only runs on cache MISS.
+     On cache HIT, Spring returns the cached value directly.
+     This is called "cache-aside" pattern.
+    */
+        log.info("Cache MISS — fetching approved doctors from database");
         return doctorRepository.findAllByStatus(ApplicationStatus.APPROVED).stream()
                 .map(this::toResponse)
                 .toList();
@@ -110,6 +132,7 @@ public class DoctorServiceImpl implements DoctorService {
     }
 
     @Override
+    @Cacheable(value = "doctors", key = "'pending'")
     public List<DoctorResponse> getAllPendingDoctors() {
         return doctorRepository.findAllByStatus(ApplicationStatus.PENDING)
                 .stream()
