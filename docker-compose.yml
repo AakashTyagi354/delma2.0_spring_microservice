@@ -1,0 +1,240 @@
+
+networks:
+  delma-network:
+    driver: bridge
+
+services:
+
+  # ── INFRASTRUCTURE ──────────────────────────────────────────
+  postgres:
+    image: postgres:16
+    container_name: postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    networks:
+      - delma-network
+
+  redis:
+    image: redis:7
+    container_name: redis
+    ports:
+      - "6379:6379"
+    networks:
+      - delma-network
+
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.5.0
+    container_name: zookeeper
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+    ports:
+      - "2181:2181"
+    networks:
+      - delma-network
+
+  kafka:
+    image: confluentinc/cp-kafka:7.5.0
+    container_name: kafka
+    depends_on:
+      - zookeeper
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+    ports:
+      - "9092:9092"
+    networks:
+      - delma-network
+
+  # ── EUREKA ──────────────────────────────────────────────────
+  eureka:
+    build: ./discovery-server
+    container_name: eureka
+    ports:
+      - "8761:8761"
+    networks:
+      - delma-network
+
+  # ── SERVICES ────────────────────────────────────────────────
+  userservice:
+    build: ./userservice
+    container_name: userservice
+    ports:
+      - "8111:8111"
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/delma_user_db
+      - SPRING_DATASOURCE_USERNAME=postgres
+      - SPRING_DATASOURCE_PASSWORD=postgres
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka:8761/eureka/
+      - SPRING_KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+      - JWT_SECRET=${JWT_SECRET}
+    depends_on:
+      - postgres
+      - eureka
+      - kafka
+    networks:
+      - delma-network
+
+  doctorservice:
+    build: ./doctorservice
+    container_name: doctorservice
+    ports:
+      - "8010:8010"
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/delma_doctor_db
+      - SPRING_DATASOURCE_USERNAME=postgres
+      - SPRING_DATASOURCE_PASSWORD=postgres
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka:8761/eureka/
+      - SPRING_KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+      - SPRING_DATA_REDIS_HOST=redis
+      - SPRING_DATA_REDIS_PORT=6379
+      - JWT_SECRET=${JWT_SECRET}
+    depends_on:
+      - postgres
+      - eureka
+      - kafka
+      - redis
+    networks:
+      - delma-network
+
+  appointmentservice:
+    build: ./appointmentservice
+    container_name: appointmentservice
+    ports:
+      - "8012:8012"
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/delma_appointment_db
+      - SPRING_DATASOURCE_USERNAME=postgres
+      - SPRING_DATASOURCE_PASSWORD=postgres
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka:8761/eureka/
+      - SPRING_KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+    depends_on:
+      - postgres
+      - eureka
+      - kafka
+    networks:
+      - delma-network
+
+  paymentservice:
+    build: ./paymentservice
+    container_name: paymentservice
+    ports:
+      - "8083:8083"
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/delma_payment_db
+      - SPRING_DATASOURCE_USERNAME=postgres
+      - SPRING_DATASOURCE_PASSWORD=postgres
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka:8761/eureka/
+    depends_on:
+      - postgres
+      - eureka
+    networks:
+      - delma-network
+
+  documentservice:
+    build: ./documentservice
+    container_name: documentservice
+    ports:
+      - "8091:8091"
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/delma_document_db
+      - SPRING_DATASOURCE_USERNAME=postgres
+      - SPRING_DATASOURCE_PASSWORD=postgres
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka:8761/eureka/
+      - AWS_ACCESS_KEY=${AWS_ACCESS_KEY}
+      - AWS_SECRET_KEY=${AWS_SECRET_KEY}
+      - AWS_S3_BUCKET=${AWS_S3_BUCKET}
+    depends_on:
+      - postgres
+      - eureka
+    networks:
+      - delma-network
+
+  notificationservice:
+    build: ./notificationservice
+    container_name: notificationservice
+    ports:
+      - "8017:8017"
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/delma_notification_db
+      - SPRING_DATASOURCE_USERNAME=postgres
+      - SPRING_DATASOURCE_PASSWORD=postgres
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka:8761/eureka/
+      - SPRING_KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+    depends_on:
+      - postgres
+      - eureka
+      - kafka
+    networks:
+      - delma-network
+
+  productservice:
+    build: ./productservice
+    container_name: productservice
+    ports:
+      - "8016:8016"
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/delma_product_db
+      - SPRING_DATASOURCE_USERNAME=postgres
+      - SPRING_DATASOURCE_PASSWORD=postgres
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka:8761/eureka/
+    depends_on:
+      - postgres
+      - eureka
+    networks:
+      - delma-network
+
+  categoryservice:
+    build: ./categoryservice
+    container_name: categoryservice
+    ports:
+      - "8015:8015"
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/delma_category_db
+      - SPRING_DATASOURCE_USERNAME=postgres
+      - SPRING_DATASOURCE_PASSWORD=postgres
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka:8761/eureka/
+    depends_on:
+      - postgres
+      - eureka
+    networks:
+      - delma-network
+
+  orderservice:
+    build: ./orderservice
+    container_name: orderservice
+    ports:
+      - "8013:8013"
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/delma_order_db
+      - SPRING_DATASOURCE_USERNAME=postgres
+      - SPRING_DATASOURCE_PASSWORD=postgres
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka:8761/eureka/
+    depends_on:
+      - postgres
+      - eureka
+    networks:
+      - delma-network
+
+  gateway:
+    build: ./gateway
+    container_name: gateway
+    ports:
+      - "8089:8089"
+      - "9090:9090"
+    environment:
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka:8761/eureka/
+      - JWT_SECRET=${JWT_SECRET}
+    depends_on:
+      - eureka
+    networks:
+      - delma-network
+
+volumes:
+  postgres-data:
