@@ -15,8 +15,14 @@ services:
       - "5432:5432"
     volumes:
       - postgres-data:/var/lib/postgresql/data
+      - ./docker/init-databases.sql:/docker-entrypoint-initdb.d/init.sql
     networks:
       - delma-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   redis:
     image: redis:7
@@ -25,6 +31,11 @@ services:
       - "6379:6379"
     networks:
       - delma-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   zookeeper:
     image: confluentinc/cp-zookeeper:7.5.0
@@ -50,19 +61,29 @@ services:
       - "9092:9092"
     networks:
       - delma-network
+    healthcheck:
+      test: ["CMD", "kafka-broker-api-versions", "--bootstrap-server", "kafka:9092"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
 
   # ── EUREKA ──────────────────────────────────────────────────
-  eureka:
-    image: aakashtyagi354/delma-discovery-server:latest
-    container_name: eureka
+  discovery-server:
+    image: aakash354/delma-discovery-server:latest
+    container_name: discovery-server
     ports:
       - "8761:8761"
     networks:
       - delma-network
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8761/actuator/health"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
 
   # ── SERVICES ────────────────────────────────────────────────
   userservice:
-    image: aakashtyagi354/delma-userservice:latest
+    image: aakash354/delma-userservice:latest
     container_name: userservice
     ports:
       - "8111:8111"
@@ -70,18 +91,21 @@ services:
       - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/delma_user_db
       - SPRING_DATASOURCE_USERNAME=postgres
       - SPRING_DATASOURCE_PASSWORD=postgres
-      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka:8761/eureka/
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://discovery-server:8761/eureka/
       - SPRING_KAFKA_BOOTSTRAP_SERVERS=kafka:9092
       - JWT_SECRET=${JWT_SECRET}
     depends_on:
-      - postgres
-      - eureka
-      - kafka
+      postgres:
+        condition: service_healthy
+      discovery-server:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
     networks:
       - delma-network
 
   doctorservice:
-    image: aakashtyagi354/delma-doctorservice:latest
+    image: aakash354/delma-doctorservice:latest
     container_name: doctorservice
     ports:
       - "8010:8010"
@@ -89,21 +113,25 @@ services:
       - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/delma_doctor_db
       - SPRING_DATASOURCE_USERNAME=postgres
       - SPRING_DATASOURCE_PASSWORD=postgres
-      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka:8761/eureka/
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://discovery-server:8761/eureka/
       - SPRING_KAFKA_BOOTSTRAP_SERVERS=kafka:9092
       - SPRING_DATA_REDIS_HOST=redis
       - SPRING_DATA_REDIS_PORT=6379
       - JWT_SECRET=${JWT_SECRET}
     depends_on:
-      - postgres
-      - eureka
-      - kafka
-      - redis
+      postgres:
+        condition: service_healthy
+      discovery-server:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
     networks:
       - delma-network
 
   appointmentservice:
-    image: aakashtyagi354/delma-appointmentservice:latest
+    image: aakash354/delma-appointmentservice:latest
     container_name: appointmentservice
     ports:
       - "8012:8012"
@@ -111,17 +139,20 @@ services:
       - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/delma_appointment_db
       - SPRING_DATASOURCE_USERNAME=postgres
       - SPRING_DATASOURCE_PASSWORD=postgres
-      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka:8761/eureka/
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://discovery-server:8761/eureka/
       - SPRING_KAFKA_BOOTSTRAP_SERVERS=kafka:9092
     depends_on:
-      - postgres
-      - eureka
-      - kafka
+      postgres:
+        condition: service_healthy
+      discovery-server:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
     networks:
       - delma-network
 
   paymentservice:
-    image: aakashtyagi354/delma-paymentservice:latest
+    image: aakash354/delma-paymentservice:latest
     container_name: paymentservice
     ports:
       - "8083:8083"
@@ -129,15 +160,17 @@ services:
       - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/delma_payment_db
       - SPRING_DATASOURCE_USERNAME=postgres
       - SPRING_DATASOURCE_PASSWORD=postgres
-      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka:8761/eureka/
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://discovery-server:8761/eureka/
     depends_on:
-      - postgres
-      - eureka
+      postgres:
+        condition: service_healthy
+      discovery-server:
+        condition: service_healthy
     networks:
       - delma-network
 
   documentservice:
-    image: aakashtyagi354/delma-documentservice:latest
+    image: aakash354/delma-documentservice:latest
     container_name: documentservice
     ports:
       - "8091:8091"
@@ -145,35 +178,41 @@ services:
       - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/delma_document_db
       - SPRING_DATASOURCE_USERNAME=postgres
       - SPRING_DATASOURCE_PASSWORD=postgres
-      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka:8761/eureka/
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://discovery-server:8761/eureka/
       - AWS_ACCESS_KEY=${AWS_ACCESS_KEY}
       - AWS_SECRET_KEY=${AWS_SECRET_KEY}
       - AWS_S3_BUCKET=${AWS_S3_BUCKET}
     depends_on:
-      - postgres
-      - eureka
+      postgres:
+        condition: service_healthy
+      discovery-server:
+        condition: service_healthy
     networks:
       - delma-network
+
   notificationservice:
-    image: aakashtyagi354/delma-notificationservice:latest
+    image: aakash354/delma-notificationservice:latest
     container_name: notificationservice
     ports:
       - "8017:8017"
     environment:
-      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/delma_notification_db
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/notification_db
       - SPRING_DATASOURCE_USERNAME=postgres
       - SPRING_DATASOURCE_PASSWORD=postgres
-      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka:8761/eureka/
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://discovery-server:8761/eureka/
       - SPRING_KAFKA_BOOTSTRAP_SERVERS=kafka:9092
     depends_on:
-      - postgres
-      - eureka
-      - kafka
+      postgres:
+        condition: service_healthy
+      discovery-server:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
     networks:
       - delma-network
 
   productservice:
-    image: aakashtyagi354/delma-productservice:latest
+    image: aakash354/delma-productservice:latest
     container_name: productservice
     ports:
       - "8016:8016"
@@ -181,15 +220,17 @@ services:
       - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/delma_product_db
       - SPRING_DATASOURCE_USERNAME=postgres
       - SPRING_DATASOURCE_PASSWORD=postgres
-      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka:8761/eureka/
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://discovery-server:8761/eureka/
     depends_on:
-      - postgres
-      - eureka
+      postgres:
+        condition: service_healthy
+      discovery-server:
+        condition: service_healthy
     networks:
       - delma-network
 
   categoryservice:
-    image: aakashtyagi354/delma-categoryservice:latest
+    image: aakash354/delma-categoryservice:latest
     container_name: categoryservice
     ports:
       - "8015:8015"
@@ -197,15 +238,17 @@ services:
       - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/delma_category_db
       - SPRING_DATASOURCE_USERNAME=postgres
       - SPRING_DATASOURCE_PASSWORD=postgres
-      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka:8761/eureka/
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://discovery-server:8761/eureka/
     depends_on:
-      - postgres
-      - eureka
+      postgres:
+        condition: service_healthy
+      discovery-server:
+        condition: service_healthy
     networks:
       - delma-network
 
   orderservice:
-    image: aakashtyagi354/delma-orderservice:latest
+    image: aakash354/delma-orderservice:latest
     container_name: orderservice
     ports:
       - "8013:8013"
@@ -213,24 +256,27 @@ services:
       - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/delma_order_db
       - SPRING_DATASOURCE_USERNAME=postgres
       - SPRING_DATASOURCE_PASSWORD=postgres
-      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka:8761/eureka/
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://discovery-server:8761/eureka/
     depends_on:
-      - postgres
-      - eureka
+      postgres:
+        condition: service_healthy
+      discovery-server:
+        condition: service_healthy
     networks:
       - delma-network
 
+  # ── GATEWAY (starts last) ────────────────────────────────────
   gateway:
-    image: aakashtyagi354/delma-gateway:latest
+    image: aakash354/delma-gateway:latest
     container_name: gateway
     ports:
       - "8089:8089"
-      - "9090:9090"
     environment:
-      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka:8761/eureka/
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://discovery-server:8761/eureka/
       - JWT_SECRET=${JWT_SECRET}
     depends_on:
-      - eureka
+      discovery-server:
+        condition: service_healthy
     networks:
       - delma-network
 

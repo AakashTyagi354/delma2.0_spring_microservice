@@ -37,10 +37,14 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
       - name: Build and push discovery-server
         uses: docker/build-push-action@v5
         with:
           context: ./discovery-server
+          platforms: linux/amd64,linux/arm64
           push: true
           tags: ${{ secrets.DOCKERHUB_USERNAME }}/delma-discovery-server:latest
 
@@ -48,6 +52,7 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           context: ./gateway
+          platforms: linux/amd64,linux/arm64
           push: true
           tags: ${{ secrets.DOCKERHUB_USERNAME }}/delma-gateway:latest
 
@@ -55,6 +60,7 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           context: ./userservice
+          platforms: linux/amd64,linux/arm64
           push: true
           tags: ${{ secrets.DOCKERHUB_USERNAME }}/delma-userservice:latest
 
@@ -62,6 +68,7 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           context: ./doctorservice
+          platforms: linux/amd64,linux/arm64
           push: true
           tags: ${{ secrets.DOCKERHUB_USERNAME }}/delma-doctorservice:latest
 
@@ -69,6 +76,7 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           context: ./appointmentservice
+          platforms: linux/amd64,linux/arm64
           push: true
           tags: ${{ secrets.DOCKERHUB_USERNAME }}/delma-appointmentservice:latest
 
@@ -76,6 +84,7 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           context: ./paymentservice
+          platforms: linux/amd64,linux/arm64
           push: true
           tags: ${{ secrets.DOCKERHUB_USERNAME }}/delma-paymentservice:latest
 
@@ -83,6 +92,7 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           context: ./documentservice
+          platforms: linux/amd64,linux/arm64
           push: true
           tags: ${{ secrets.DOCKERHUB_USERNAME }}/delma-documentservice:latest
 
@@ -90,6 +100,7 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           context: ./notificationservice
+          platforms: linux/amd64,linux/arm64
           push: true
           tags: ${{ secrets.DOCKERHUB_USERNAME }}/delma-notificationservice:latest
 
@@ -97,6 +108,7 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           context: ./productservice
+          platforms: linux/amd64,linux/arm64
           push: true
           tags: ${{ secrets.DOCKERHUB_USERNAME }}/delma-productservice:latest
 
@@ -104,6 +116,7 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           context: ./categoryservice
+          platforms: linux/amd64,linux/arm64
           push: true
           tags: ${{ secrets.DOCKERHUB_USERNAME }}/delma-categoryservice:latest
 
@@ -111,5 +124,6 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           context: ./orderservice
+          platforms: linux/amd64,linux/arm64
           push: true
           tags: ${{ secrets.DOCKERHUB_USERNAME }}/delma-orderservice:latest
