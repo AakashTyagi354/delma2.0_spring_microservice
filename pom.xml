@@ -37,7 +37,6 @@
 		<module>paymentservice</module>
 		<module>documentservice</module>
 		<module>notificationservice</module>
-        <module>patientservice</module>
         <module>orderservice</module>
         <module>discovery-server</module>
 

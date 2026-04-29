@@ -154,7 +154,6 @@ services:
       - eureka
     networks:
       - delma-network
-
   notificationservice:
     image: aakashtyagi354/delma-notificationservice:latest
     container_name: notificationservice
