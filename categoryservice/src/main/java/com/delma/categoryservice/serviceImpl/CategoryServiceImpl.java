@@ -7,13 +7,13 @@ import com.delma.categoryservice.entity.Category;
 import com.delma.categoryservice.repository.CategoryRepository;
 import com.delma.categoryservice.service.CategoryService;
 import com.delma.categoryservice.util.SlugUtil;
+import com.delma.common.exception.ConflictException;
+import com.delma.common.exception.ResourceNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.crossstore.ChangeSetPersister;
 import org.springframework.stereotype.Service;
-
 import java.util.List;
-import java.util.stream.Collectors;
+
 
 @Slf4j
 @Service
@@ -23,10 +23,10 @@ public class CategoryServiceImpl implements CategoryService {
     private final CategoryRepository repository;
 
     @Override
-    public List<CategoryResponse> create(CategoryRequest request) {
+    public CategoryResponse create(CategoryRequest request) {
         String slug = SlugUtil.toSlug(request.name());
         if(repository.existsBySlug(slug)){
-            throw new RuntimeException("Category already exists");
+            throw new ConflictException("Category already exists slug: "+slug);
         }
 
         Category category = new Category();
@@ -34,8 +34,7 @@ public class CategoryServiceImpl implements CategoryService {
         category.setSlug(slug);
         category.setDescription(request.description());
         Category savedCategory = repository.save(category);
-        return repository.findAll().stream().map(this::map)
-                .toList();
+        return toResponse(savedCategory);
     }
 
     @Override
@@ -43,7 +42,7 @@ public class CategoryServiceImpl implements CategoryService {
         return repository.findAll()
                 .stream()
                 .filter(Category::getIsActive)
-                .map(this::map)
+                .map(this::toResponse)
                 .toList();
     }
 
@@ -51,12 +50,12 @@ public class CategoryServiceImpl implements CategoryService {
     public CategoryResponse getBySlug(String slug) {
         log.info("Looking for category with slug: {}", slug);
         return repository.findBySlugAndIsActiveTrue(slug)
-                .map(this::map)
-                .orElseThrow(() -> new RuntimeException("Category not found"));
+                .map(this::toResponse)
+                .orElseThrow(() -> new ResourceNotFoundException("Category not found slug: "+slug));
     }
 
-    @Override
-    public CategoryResponse map(Category category) {
+
+    private CategoryResponse toResponse(Category category) {
         return new CategoryResponse(
                 category.getId(),
                 category.getName(),
@@ -66,11 +65,10 @@ public class CategoryServiceImpl implements CategoryService {
     }
 
     @Override
-    public List<CategoryResponse> deleteCategory(Long categoryId) {
-        Category category = repository.findById(categoryId).orElseThrow(() -> new RuntimeException("Category Not found"));
-       repository.deleteById(categoryId);
-
-       return repository.findAll().stream().map((this::map)).toList();
-
+    public void deleteCategory(Long categoryId) {
+       Category category =  repository.findById(categoryId)  // DB call 1 - SELECT
+                .orElseThrow(() -> new ResourceNotFoundException("Category not found categoryId "+categoryId));
+        repository.delete(category);
     }
 }
+
