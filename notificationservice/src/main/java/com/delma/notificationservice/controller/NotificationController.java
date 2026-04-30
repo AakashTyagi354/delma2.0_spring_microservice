@@ -1,8 +1,9 @@
 package com.delma.notificationservice.controller;
 
+import com.delma.common.dto.ApiResponse;
 import com.delma.notificationservice.dto.NotificationCreateRequest;
 import com.delma.notificationservice.dto.NotificationResponse;
-import com.delma.notificationservice.response.ApiResponse;
+
 import com.delma.notificationservice.service.NotificationService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -21,26 +22,26 @@ public class NotificationController {
     private final NotificationService notificationService;
 
     @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<NotificationResponse> create(
+    public ResponseEntity<ApiResponse<NotificationResponse>> create(
             @RequestBody @Valid NotificationCreateRequest request) {
-        return ResponseEntity.ok(notificationService.create(request));
+        return ResponseEntity.ok(ApiResponse.success(notificationService.create(request),"Notification created"));
     }
 
     @GetMapping("/user/{userId}")
-    public ResponseEntity<List<NotificationResponse>> getUserNotifications(
+    public ResponseEntity<ApiResponse<List<NotificationResponse>>> getUserNotifications(
             @PathVariable String userId) {
-        return ResponseEntity.ok(notificationService.getUserNotifications(userId));
+        return ResponseEntity.ok(ApiResponse.success(notificationService.getUserNotifications(userId),"Getting all the notification for user"));
     }
 
     @PatchMapping("/{id}/read")
-    public ResponseEntity<Void> markAsRead(@PathVariable UUID id) {
+    public ResponseEntity<ApiResponse<Void>> markAsRead(@PathVariable UUID id) {
         notificationService.markAsRead(id);
-        return ResponseEntity.noContent().build();
+        return ResponseEntity.ok(ApiResponse.success("marked as read"));
     }
     @DeleteMapping("/delete/{id}")
-    public ResponseEntity<ApiResponse<String>> deleteNotification(@PathVariable String id) {
-        notificationService.deleteNotification(id);
-        ApiResponse<String> response = new ApiResponse<>("Notification deleted successfully");
-        return ResponseEntity.ok(response);
+    public ResponseEntity<ApiResponse<String>> deleteNotification(@PathVariable UUID id) {
+        notificationService.deleteNotificationById(id);
+
+        return ResponseEntity.ok(ApiResponse.success("Notification deleted successfully"));
     }
 }

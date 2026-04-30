@@ -1,5 +1,6 @@
 package com.delma.notificationservice.serviceImpl;
 
+import com.delma.common.exception.ResourceNotFoundException;
 import com.delma.notificationservice.dto.NotificationCreateRequest;
 import com.delma.notificationservice.dto.NotificationResponse;
 import com.delma.notificationservice.entity.Notification;
@@ -9,7 +10,6 @@ import com.delma.notificationservice.service.NotificationService;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.jspecify.annotations.Nullable;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
@@ -26,6 +26,7 @@ public class NotificationServiceImpl implements NotificationService {
     private final NotificationRepository repository;
 
     @Override
+    @Transactional
     public NotificationResponse create(NotificationCreateRequest request) {
 
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
@@ -55,9 +56,10 @@ public class NotificationServiceImpl implements NotificationService {
 
 
     @Override
+    @Transactional
     public void markAsRead(UUID notificationId) {
         Notification notification = repository.findById(notificationId)
-                .orElseThrow(() -> new IllegalArgumentException("Notification not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Notification not found NotificationId: "+notificationId));
 
         notification.setRead(true);
         repository.save(notification);
@@ -73,6 +75,7 @@ public class NotificationServiceImpl implements NotificationService {
         );
     }
     @Override
+    @Transactional
     public void createFromEvent(NotificationEvent event) {
 
         Notification notification = new Notification();
@@ -87,11 +90,9 @@ public class NotificationServiceImpl implements NotificationService {
 
     @Override
     @Transactional
-    public void deleteNotification(String id) {
-        List<Notification> list =
-                repository.findByUserId(id);
-        if(list.isEmpty()) throw new IllegalArgumentException("No notifications found for user id: " + id);
-
-        repository.deleteAllByUserId(id);
+    public void deleteNotificationById(UUID id) {
+        Notification notification =
+                repository.findById(id).orElseThrow(() -> new ResourceNotFoundException("Notification do not exits with UUUID id: " + id));
+        repository.delete(notification);
     }
 }

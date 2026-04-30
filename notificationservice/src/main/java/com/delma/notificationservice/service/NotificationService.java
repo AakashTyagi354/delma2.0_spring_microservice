@@ -14,7 +14,7 @@ public interface NotificationService {
     List<NotificationResponse> getUserNotifications(String userId);
 
     void markAsRead(UUID notificationId);
-    public void createFromEvent(NotificationEvent event);
+    void createFromEvent(NotificationEvent event);
 
-    void deleteNotification(String id);
+    void deleteNotificationById(UUID id);
 }

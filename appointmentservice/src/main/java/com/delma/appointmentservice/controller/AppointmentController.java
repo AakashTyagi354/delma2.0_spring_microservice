@@ -2,8 +2,6 @@ package com.delma.appointmentservice.controller;
 
 import com.delma.appointmentservice.dto.AppointmentResponse;
 import com.delma.appointmentservice.dto.DoctorSlotResponse;
-import com.delma.appointmentservice.entity.Appointment;
-import com.delma.appointmentservice.entity.DoctorSlot;
 import com.delma.appointmentservice.service.AppointmentService;
 import com.delma.common.dto.ApiResponse;
 import lombok.RequiredArgsConstructor;
@@ -14,7 +12,6 @@ import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
 import java.util.List;
-import java.util.Map;
 
 @Slf4j
 @RestController
