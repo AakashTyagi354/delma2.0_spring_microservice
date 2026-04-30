@@ -1,5 +1,6 @@
 package com.delma.paymentservice.serviceImpl;
 
+import com.delma.common.exception.BadRequestException;
 import com.delma.paymentservice.service.PaymentService;
 import com.razorpay.Order;
 import com.razorpay.RazorpayClient;
@@ -43,9 +44,7 @@ public class PaymentServiceImpl implements PaymentService {
             // This method will throw an exception if the signature is invalid
             return Utils.verifyPaymentSignature(options, keySecret);
         } catch (Exception e) {
-            // If an exception is caught, the signature was tampered with or is invalid
-            System.err.println("Signature verification failed: " + e.getMessage());
-            return false;
+            throw new BadRequestException("Signature verification failed: "+e.getMessage());
         }
     }
 }
