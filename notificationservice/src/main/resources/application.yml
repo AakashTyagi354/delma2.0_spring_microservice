@@ -21,7 +21,7 @@ spring:
       spring.json.value.default.type: com.delma.notificationservice.kafka.NotificationEvent
       spring.json.trusted.packages: "*"
   datasource:
-    url: jdbc:postgresql://localhost:5432/notification_db
+    url: jdbc:postgresql://localhost:5432/delma_notification_db
     username: postgres
     password: postgres
     driver-class-name: org.postgresql.Driver
