@@ -3,7 +3,7 @@ CREATE DATABASE delma_doctor_db;
 CREATE DATABASE delma_appointment_db;
 CREATE DATABASE delma_payment_db;
 CREATE DATABASE delma_document_db;
-CREATE DATABASE notification_db;
+CREATE DATABASE delma_notification_db;
 CREATE DATABASE delma_product_db;
 CREATE DATABASE delma_category_db;
 CREATE DATABASE delma_order_db;
