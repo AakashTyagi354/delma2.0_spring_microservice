@@ -7,9 +7,8 @@ import com.delma.categoryservice.entity.Category;
 import java.util.List;
 
 public interface CategoryService {
-    public List<CategoryResponse>  create(CategoryRequest request);
-    public List<CategoryResponse> getAll();
-    public CategoryResponse getBySlug(String slug);
-    public CategoryResponse map(Category category);
-    public List<CategoryResponse> deleteCategory(Long categoryId);
+      CategoryResponse  create(CategoryRequest request);
+      List<CategoryResponse> getAll();
+      CategoryResponse getBySlug(String slug);
+      void deleteCategory(Long categoryId);
 }

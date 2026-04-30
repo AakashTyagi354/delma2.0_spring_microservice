@@ -4,6 +4,7 @@ package com.delma.categoryservice.controller;
 import com.delma.categoryservice.dto.CategoryRequest;
 import com.delma.categoryservice.dto.CategoryResponse;
 import com.delma.categoryservice.service.CategoryService;
+import com.delma.common.dto.ApiResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -22,28 +23,28 @@ public class CategoryController {
 
     @PreAuthorize("hasRole('ADMIN')")
     @PostMapping("/create")
-    public ResponseEntity<List<CategoryResponse>> create(@RequestBody @Valid CategoryRequest request) {
-        List<CategoryResponse> allCategories = categoryService.create((request));
-        return ResponseEntity.ok(allCategories);
+    public ResponseEntity<ApiResponse<CategoryResponse>> create(@RequestBody @Valid CategoryRequest request) {
+        CategoryResponse allCategories = categoryService.create((request));
+        return ResponseEntity.ok(ApiResponse.success(allCategories,"The category has been created"));
     }
 
     @PreAuthorize("hasRole('ADMIN')")
     @DeleteMapping("/delete/{id}")
-    public ResponseEntity<List<CategoryResponse>> deleteCategory(@PathVariable(name = "id") Long categoryId){
-        List<CategoryResponse> deleteCategory = categoryService.deleteCategory(categoryId);
-        return ResponseEntity.ok(deleteCategory);
+    public ResponseEntity<ApiResponse<Void>> deleteCategory(@PathVariable(name = "id") Long categoryId){
+        categoryService.deleteCategory(categoryId);
+        return ResponseEntity.ok(ApiResponse.success("This Category has been deleted"));
     }
 
     @GetMapping("/all")
-    public ResponseEntity<List<CategoryResponse>> getAll() {
-        return ResponseEntity.ok(categoryService.getAll());
+    public ResponseEntity<ApiResponse<List<CategoryResponse>>> getAll() {
+        return ResponseEntity.ok(ApiResponse.success(categoryService.getAll(),"Getting all the data"));
     }
 
     @GetMapping("/{slug}")
-    public ResponseEntity<CategoryResponse> getBySlug(@PathVariable String slug) {
+    public ResponseEntity<ApiResponse<CategoryResponse>> getBySlug(@PathVariable String slug) {
         log.info("Fetching category with slug: {}", slug);
         CategoryResponse cat =  categoryService.getBySlug(slug);
         log.info("category: {}",cat);
-        return ResponseEntity.ok(cat);
+        return ResponseEntity.ok(ApiResponse.success(cat,"Fetching category with slug"));
     }
 }
