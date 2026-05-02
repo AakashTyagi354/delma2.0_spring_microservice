@@ -11,6 +11,7 @@ import java.time.LocalTime;
 @Getter
 @Builder
 public class DoctorSlotResponse {
+    private Long id;
     private Long doctorId;
 
     private LocalDate date;

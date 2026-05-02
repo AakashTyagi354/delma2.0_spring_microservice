@@ -131,6 +131,7 @@ public class AppointmentServiceImpl implements AppointmentService {
 
     private DoctorSlotResponse toResponse(DoctorSlot ds){
         return DoctorSlotResponse.builder()
+                .id(ds.getId())
                 .doctorId(ds.getDoctorId())
                 .date(ds.getDate())
                 .status(ds.getStatus())
@@ -142,6 +143,7 @@ public class AppointmentServiceImpl implements AppointmentService {
 
     private AppointmentResponse toResponse(Appointment as){
         return AppointmentResponse.builder()
+                .id(as.getId())
                 .userId(as.getUserId())
                 .doctorId(as.getDoctorId())
                 .slotId(as.getSlotId())

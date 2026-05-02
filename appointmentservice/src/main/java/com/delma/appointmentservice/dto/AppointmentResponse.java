@@ -8,6 +8,7 @@ import lombok.Getter;
 @Getter
 @Builder
 public class AppointmentResponse {
+    private Long id;
     private Long userId;
     private Long doctorId;
     private Long slotId;

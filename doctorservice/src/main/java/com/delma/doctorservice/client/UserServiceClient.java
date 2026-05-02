@@ -8,8 +8,7 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestHeader;
 
 @FeignClient(
-        name = "userservice",
-        url = "http://localhost:8111"
+        name = "userservice"
 )
 public interface UserServiceClient {
 
