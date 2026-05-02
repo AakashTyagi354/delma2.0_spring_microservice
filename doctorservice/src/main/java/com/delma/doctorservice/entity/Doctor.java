@@ -66,6 +66,7 @@ public class Doctor {
     private String gender;
 
 //    @Enumerated(EnumType.STRING)
+@Enumerated(EnumType.STRING)
 @Column(nullable = false)
     private ApplicationStatus status;
 

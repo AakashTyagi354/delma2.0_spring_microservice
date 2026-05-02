@@ -51,7 +51,12 @@ public class DoctorServiceImpl implements DoctorService {
         Doctor app = Doctor.builder()
                         .userId(userId)
                         .specialization(request.getSpecialization())
-                                .experience(request.getExperience())
+                        .experience(request.getExperience())
+                .phone(request.getPhoneNo())
+                .address(request.getAddress())
+                .firstName(request.getName())
+                .feesPerConsultation(request.getFeesPerCunsaltation())
+                .email(request.getEmail())
                                         .status(ApplicationStatus.PENDING)
                                                 .build();
 
