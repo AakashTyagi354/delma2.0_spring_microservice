@@ -277,6 +277,22 @@ services:
     networks:
       - delma-network
 
+  aiservice:
+    image: aakash354/delma-aiservice:latest
+    container_name: aiservice
+    ports:
+      - "8095:8095"
+    environment:
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://discovery-server:8761/eureka/
+      - JWT_SECRET=${JWT_SECRET}
+      - GROQ_API_KEY=${GROQ_API_KEY}
+    depends_on:
+      discovery-server:
+        condition: service_healthy
+    networks:
+      - delma-network
+
+
   # ── GATEWAY (starts last) ────────────────────────────────────
   gateway:
     image: aakash354/delma-gateway:latest
