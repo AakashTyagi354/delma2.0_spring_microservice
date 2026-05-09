@@ -62,7 +62,10 @@ spring:
               uri: lb://paymentservice
               predicates:
                 - Path=/api/v1/payments/**
-
+            - id: aiservice
+              uri: lb://aiservice
+              predicates:
+                - Path=/api/v1/ai/**
 
 
 # Eureka client config for gateway
