@@ -39,6 +39,7 @@
 		<module>notificationservice</module>
         <module>orderservice</module>
         <module>discovery-server</module>
+		<module>aiservice</module>
 
 
     </modules>
