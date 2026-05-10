@@ -1,13 +1,14 @@
 package com.delma.userservice.security;
 
+import com.delma.common.exception.BadRequestException;
 import com.delma.common.exception.ResourceNotFoundException;
 import com.delma.userservice.Enum.Role;
 import com.delma.userservice.config.AppConfig;
-import com.delma.userservice.dto.LoginRequestDTO;
-import com.delma.userservice.dto.LoginResponseDTO;
-import com.delma.userservice.dto.SignupResponseDTO;
+import com.delma.userservice.dto.*;
 import com.delma.userservice.entity.User;
 import com.delma.userservice.reposistory.UserReposistory;
+import com.delma.userservice.service.EmailService;
+import com.delma.userservice.service.OtpService;
 import com.delma.userservice.service.RefreshTokenService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -35,6 +36,8 @@ public class AuthService {
     private final UserReposistory userReposistory;
     private final PasswordEncoder passwordEncoder;
     private final RefreshTokenService refreshTokenService;
+    private final OtpService otpService;
+    private final EmailService emailService;
 
     public  LoginResponseDTO login(LoginRequestDTO loginRequest) {
 
@@ -50,6 +53,8 @@ public class AuthService {
 //   ↓
 //        Authenticated User
         log.info("Attempting to authenticate user with email: {}", loginRequest.getEmail());
+
+
         Authentication authentication = authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(loginRequest.getEmail(),loginRequest.getPassword())
         );
@@ -60,6 +65,10 @@ public class AuthService {
         User user = userReposistory
                 .findByEmail(userDetails.getUsername())
                 .orElseThrow(() -> new ResourceNotFoundException("User not found for id: "+userDetails.getUsername()));
+
+        if (!Boolean.TRUE.equals(user.getIsVerified())) {
+            throw new BadRequestException("Email not verified. Please verify your email before logging in.");
+        }
         // Here you would typically generate a JWT or session token
         log.info("user: {}",user);
         String token = authUtil.generateAccessToken(user);
@@ -79,7 +88,7 @@ public class AuthService {
     // ---------------- SIGNUP ----------------
     public SignupResponseDTO signup(LoginRequestDTO signupRequestDTO) {
 
-        if (userReposistory.findByEmail(signupRequestDTO.getName()).isPresent()) {
+        if (userReposistory.findByEmail(signupRequestDTO.getEmail()).isPresent()) {
             throw new IllegalArgumentException("User already exists");
         }
 
@@ -89,12 +98,52 @@ public class AuthService {
                 .password(passwordEncoder.encode(signupRequestDTO.getPassword()))
                 .isAdmin("false")
                 .isDoctor("false")
+                .isVerified(false)
                 .roles(Set.of(Role.USER))
                 .build();
 
         userReposistory.save(user);
 
+        // generate OTP and send email
+        String otp = otpService.generateAndStoreOtp((signupRequestDTO.getEmail()));
+        emailService.sendOtpEmail(signupRequestDTO.getEmail(),otp);
+
+        log.info("User registered successfully, OTP sent to: {}", signupRequestDTO.getEmail());
         return new SignupResponseDTO(user.getName(), user.getEmail());
+    }
+
+    public String verifyOtp(VerifyOtpRequest request){
+        User user = userReposistory.findByEmail(request.email())
+                .orElseThrow(() -> new ResourceNotFoundException("User not found: " + request.email()));
+
+        if (Boolean.TRUE.equals(user.getIsVerified())) {
+            throw new BadRequestException("Email already verified.");
+        }
+
+        boolean isValid = otpService.verifyOtp(request.email(), request.otp());
+        if (!isValid) {
+            throw new BadRequestException("Invalid or expired OTP. Please request a new one.");
+        }
+        user.setIsVerified(true);
+        userReposistory.save(user);
+
+        log.info("Email verified successfully for: {}", request.email());
+        return "Email verified successfully. You can now log in.";
+    }
+
+    public String resendOtp(ResendOtpRequest request) {
+        User user = userReposistory.findByEmail(request.email())
+                .orElseThrow(() -> new ResourceNotFoundException("User not found: " + request.email()));
+
+        if (Boolean.TRUE.equals(user.getIsVerified())) {
+            throw new BadRequestException("Email already verified.");
+        }
+
+        String otp = otpService.generateAndStoreOtp(request.email());
+        emailService.sendOtpEmail(request.email(), otp);
+
+        log.info("OTP resent to: {}", request.email());
+        return "OTP resent successfully. Please check your email.";
     }
 
     public  LoginResponseDTO adminLogin(LoginRequestDTO loginRequest) throws AccessDeniedException {

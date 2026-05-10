@@ -37,6 +37,9 @@ public class User implements UserDetails {
     @Column(name = "isDoctor")
     private String isDoctor;
 
+    @Column(name = "is_verified")
+    private Boolean isVerified = false;
+
 //    @ElementCollection(fetch = FetchType.EAGER)
 //    @Enumerated(EnumType.STRING)
 //    private Set<Role> roles;
@@ -70,5 +73,7 @@ public class User implements UserDetails {
     @Override public boolean isAccountNonExpired() { return true; }
     @Override public boolean isAccountNonLocked() { return true; }
     @Override public boolean isCredentialsNonExpired() { return true; }
-    @Override public boolean isEnabled() { return true; }
+    @Override public boolean isEnabled() {
+        return Boolean.TRUE.equals(isVerified);
+    }
 }

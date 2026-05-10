@@ -24,7 +24,7 @@ public class JwtAuthGatewayFilter implements GlobalFilter, Ordered {
         String path = exchange.getRequest().getURI().getPath();
 
         // we do not check for auth endpoints because they are for login/signup
-        if (path.startsWith("/auth/admin-login") || path.startsWith("/auth/signup") || path.startsWith("/auth/login") || path.startsWith("/auth/refresh")) {
+        if (path.startsWith("/auth/verify-otp") || path.startsWith("/auth/resend-otp") || path.startsWith("/auth/admin-login") || path.startsWith("/auth/signup") || path.startsWith("/auth/login") || path.startsWith("/auth/refresh")) {
             log.info("The enpoint is of auth do not check");
             return chain.filter(exchange);
         }
