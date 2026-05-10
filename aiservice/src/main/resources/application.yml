@@ -1,0 +1,25 @@
+server:
+  port: 8095
+
+spring:
+  application:
+    name: aiservice
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://discovery-server:8761/eureka/
+  instance:
+    prefer-ip-address: true
+
+---
+spring:
+  config:
+    activate:
+      on-profile: local
+
+eureka:
+  client:
+    enabled: false
+    register-with-eureka: false
+    fetch-registry: false
