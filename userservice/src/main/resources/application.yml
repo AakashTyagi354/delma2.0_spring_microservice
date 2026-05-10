@@ -1,6 +1,49 @@
 server:
   port: 8111
 
+spring:
+  application:
+    name: userservice
+  datasource:
+    url: jdbc:postgresql://postgres:5432/delma_user_db
+    username: postgres
+    password: postgres
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        format_sql: true
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+    show-sql: true
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: ${MAIL_USERNAME}
+    password: ${MAIL_PASSWORD}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+  data:
+    redis:
+      host: redis
+      port: 6379
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://discovery-server:8761/eureka/
+    register-with-eureka: true
+    fetch-registry: true
+  instance:
+    prefer-ip-address: true
+
+jwt:
+  secret: ${JWT_SECRET}
 
 management:
   endpoints:
@@ -10,9 +53,6 @@ management:
   endpoint:
     health:
       show-details: always
-  health:
-    circuitbreakers:
-      enabled: true
 
 resilience4j:
   circuitbreaker:
@@ -26,52 +66,31 @@ resilience4j:
         automaticTransitionFromOpenToHalfOpenEnabled: true
         slidingWindowType: COUNT_BASED
 
+logging:
+  level:
+    root: INFO
+  file:
+    name: logs/${spring.application.name}.log
+  logback:
+    rollingpolicy:
+      max-history: 7
 
-
+---
 spring:
-  application:
-    name: userservice
+  config:
+    activate:
+      on-profile: local
   datasource:
     url: jdbc:postgresql://localhost:5432/delma_user_db
     username: postgres
     password: postgres
-    driver-class-name: org.postgresql.Driver
-  security:
-    user:
-      name: admin
-      password: admin123
-
-  jpa:
-    hibernate:
-      ddl-auto: update
-    properties:
-      hibernate:
-        format_sql: true
-        dialect: org.hibernate.dialect.PostgreSQLDialect
-    show-sql: true
+  data:
+    redis:
+      host: localhost
+      port: 6379
 
 eureka:
   client:
-    service-url:
-      defaultZone: http://localhost:8761/eureka/
-    register-with-eureka: true    # register this service with Eureka on startup
-    fetch-registry: true          # fetch the registry so this service can call others
-  instance:
-    prefer-ip-address: true       # use IP address instead of hostname
-
-logging:
-  level:
-    root:  INFO
-  file:
-    name:  logs/${spring.application.name}.log
-  logback:
-    rollingpolicy:
-      max-history:7
-
-
-
-
-
-
-jwt:
-  secret: Z0ZqQm1nQ0tZQ1N2R3p3VjVnQ0hFZ3pMZ1R2aD...
+    enabled: false
+    register-with-eureka: false
+    fetch-registry: false

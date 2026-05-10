@@ -99,6 +99,8 @@ services:
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://discovery-server:8761/eureka/
       - SPRING_KAFKA_BOOTSTRAP_SERVERS=kafka:9092
       - JWT_SECRET=${JWT_SECRET}
+      - SPRING_MAIL_USERNAME=${MAIL_USERNAME}
+      - SPRING_MAIL_PASSWORD=${MAIL_PASSWORD}
     depends_on:
       postgres:
         condition: service_healthy
@@ -286,6 +288,8 @@ services:
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://discovery-server:8761/eureka/
       - JWT_SECRET=${JWT_SECRET}
       - GROQ_API_KEY=${GROQ_API_KEY}
+      - GROQ_API_URL=https://api.groq.com/openai/v1/chat/completions
+      - GROQ_API_MODEL=llama-3.1-8b-instant
     depends_on:
       discovery-server:
         condition: service_healthy

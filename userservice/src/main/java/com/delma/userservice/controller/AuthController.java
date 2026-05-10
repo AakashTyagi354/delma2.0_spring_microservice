@@ -1,9 +1,7 @@
 package com.delma.userservice.controller;
 
 import com.delma.common.dto.ApiResponse;
-import com.delma.userservice.dto.LoginRequestDTO;
-import com.delma.userservice.dto.LoginResponseDTO;
-import com.delma.userservice.dto.SignupResponseDTO;
+import com.delma.userservice.dto.*;
 import com.delma.userservice.entity.RefreshToken;
 import com.delma.userservice.entity.User;
 import com.delma.userservice.reposistory.UserReposistory;
@@ -14,6 +12,7 @@ import com.delma.userservice.service.RefreshTokenService;
 import com.delma.userservice.service.UserService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpHeaders;
@@ -69,6 +68,20 @@ public class AuthController {
                                 "Login successful"
                         )
                 );
+    }
+
+    @PostMapping("/verify-otp")
+    public ResponseEntity<ApiResponse<String>> verifyOtp(
+            @RequestBody @Valid VerifyOtpRequest request) {
+        String message = authService.verifyOtp(request);
+        return ResponseEntity.ok(ApiResponse.success(message, "OTP verification successful"));
+    }
+
+    @PostMapping("/resend-otp")
+    public ResponseEntity<ApiResponse<String>> resendOtp(
+            @RequestBody @Valid ResendOtpRequest request) {
+        String message = authService.resendOtp(request);
+        return ResponseEntity.ok(ApiResponse.success(message, "OTP resent"));
     }
 
     @PostMapping("/logout")
