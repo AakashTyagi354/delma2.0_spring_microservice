@@ -5,8 +5,10 @@ target/
 !**/src/test/**/target/
 
 # Ignore all application configuration files (Recommended)
-**/src/main/resources/application.yml
+#**/src/main/resources/application.yml
 
+**/src/main/resources/application.yml
+!aiservice/src/main/resources/application.yml
 
 ### STS ###
 .apt_generated

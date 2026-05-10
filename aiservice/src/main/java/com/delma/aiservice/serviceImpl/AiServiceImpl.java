@@ -21,13 +21,13 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class AiServiceImpl implements AiService {
 
-    @Value("${groq.api.key}")
+    @Value("${GROQ_API_KEY}")
     private String apiKey;
 
-    @Value("${groq.api.url}")
+    @Value("${GROQ_API_URL}")
     private String apiUrl;
 
-    @Value("${groq.api.model}")
+    @Value("${GROQ_API_MODEL}")
     private String model;
 
     private final RestTemplate restTemplate;
