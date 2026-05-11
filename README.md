@@ -1,10 +1,12 @@
 # Delma — Online Consulting Platform
 
-> A microservices-based healthcare consultation platform built with Spring Boot, Spring Cloud, Next.js, Redis, Kafka, and AWS. Connects patients with doctors for video consultations, document sharing, and an integrated medical e-store.
+> A microservices-based healthcare consultation platform built with Spring Boot, Spring Cloud, Next.js, Redis, Kafka, AWS, and Groq AI. Connects patients with doctors for video consultations, document sharing, AI symptom analysis, and an integrated medical e-store.
 
 [![Java](https://img.shields.io/badge/Java-21-orange)](https://www.oracle.com/java/)
 [![Spring Boot](https://img.shields.io/badge/Spring%20Boot-4.0.0-green)](https://spring.io/projects/spring-boot)
 [![Spring Cloud](https://img.shields.io/badge/Spring%20Cloud-2025.1.0-blue)](https://spring.io/projects/spring-cloud)
+[![Docker](https://img.shields.io/badge/Docker-Multi--arch-2496ED)](https://www.docker.com/)
+[![CI/CD](https://img.shields.io/badge/CI%2FCD-GitHub%20Actions-2088FF)](https://github.com/features/actions)
 [![License](https://img.shields.io/badge/License-MIT-yellow)](LICENSE)
 
 ---
@@ -21,9 +23,10 @@
 8. [Caching Strategy](#8-caching-strategy)
 9. [Authentication & Security](#9-authentication--security)
 10. [Engineering Challenges & Solutions](#10-engineering-challenges--solutions)
-11. [Local Setup](#11-local-setup)
-12. [Tech Stack](#12-tech-stack)
-13. [Future Roadmap](#13-future-roadmap)
+11. [Deployment (Docker + CI/CD)](#11-deployment-docker--cicd)
+12. [Local Setup](#12-local-setup)
+13. [Tech Stack](#13-tech-stack)
+14. [Future Roadmap](#14-future-roadmap)
 
 ---
 
@@ -31,23 +34,24 @@
 
 ### What Delma Does
 
-Delma is an end-to-end online consulting platform with four core capabilities:
+Delma is an end-to-end online consulting platform with five core capabilities:
 
-1. **Doctor Onboarding & Discovery** — Users register, optionally apply to become doctors, get approved by admins, and appear in a searchable doctor directory.
-2. **Appointment & Video Consultation** — Patients book paid appointments based on doctor availability, then join secure video calls via ZEGOCLOUD with AES-256 encryption.
-3. **Medical Document Sharing** — Patients upload medical documents to AWS S3 with presigned URLs, accessible only by their assigned doctor.
-4. **Medical E-Store** — End-to-end e-commerce for medications with categorized products, cart, payment via Razorpay, and order management.
+1. **Doctor Onboarding & Discovery** — Users register with email OTP verification, optionally apply to become doctors, get approved by admins, and appear in a searchable doctor directory.
+2. **AI Symptom Checker** — Patients describe symptoms in plain English; Groq AI (Llama 3.1) recommends the right specialization and auto-filters the doctor listing.
+3. **Appointment & Video Consultation** — Patients book paid appointments based on doctor availability, then join secure video calls via ZEGOCLOUD with AES-256 encryption.
+4. **Medical Document Sharing** — Patients upload medical documents to AWS S3 with presigned URLs, accessible only by their assigned doctor.
+5. **Medical E-Store** — End-to-end e-commerce for medications with categorized products, cart, payment via Razorpay, and order management.
 
 ### Why Microservices
 
-A monolithic approach would couple unrelated concerns — patient bookings shouldn't be impacted by e-store outages. Each domain (users, doctors, appointments, payments, etc.) is isolated:
+A monolithic approach would couple unrelated concerns — patient bookings shouldn't be impacted by e-store outages. Each domain (users, doctors, appointments, payments, AI, etc.) is isolated:
 
 | Benefit | How Delma Achieves It |
 |---------|----------------------|
 | **Independent scaling** | Scale `appointmentservice` separately from `productservice` during peak booking hours |
-| **Fault isolation** | If `notificationservice` crashes, video calls still work |
+| **Fault isolation** | If `notificationservice` or `aiservice` crashes, video calls still work |
 | **Independent deployment** | Update the e-store without touching consultation logic |
-| **Technology flexibility** | Each service can use what fits — Postgres for users, MongoDB for documents in future |
+| **Technology flexibility** | Each service can use what fits — Postgres for users, external AI for symptom analysis |
 
 ---
 
@@ -86,7 +90,8 @@ A monolithic approach would couple unrelated concerns — patient bookings shoul
 │   :8111     │  │    :8010    │  │    :8012     │  │    :8083     │  │    :8091    │
 │             │  │             │  │              │  │              │  │             │
 │  PostgreSQL │  │  PostgreSQL │  │  PostgreSQL  │  │  PostgreSQL  │  │  PostgreSQL │
-│             │  │   + Redis   │  │              │  │              │  │   + AWS S3  │
+│  + Redis    │  │  + Redis    │  │              │  │              │  │   + AWS S3  │
+│  (OTP)      │  │  (Cache)    │  │              │  │              │  │             │
 └──────┬──────┘  └──────┬──────┘  └──────┬───────┘  └──────┬───────┘  └─────────────┘
        │                │                │                 │
        └────────────────┴────────┬───────┴─────────────────┘
@@ -98,15 +103,18 @@ A monolithic approach would couple unrelated concerns — patient bookings shoul
                          │   (Email + Real-time)     │
                          └──────────────────────────┘
 
-┌──────────────────────┐  ┌──────────────────────┐  ┌──────────────────────┐
-│   productservice     │  │   categoryservice    │  │   orderservice       │
-│       :8016          │  │       :8015          │  │       :8013          │
-│   E-Store Products   │  │   Product Categories │  │   Order Management   │
-└──────────────────────┘  └──────────────────────┘  └──────────────────────┘
+┌──────────────┐  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐
+│  aiservice   │  │productservice│  │categoryservice│ │ orderservice │
+│    :8095     │  │    :8016     │  │    :8015     │  │    :8013     │
+│              │  │              │  │              │  │              │
+│  Groq API    │  │  PostgreSQL  │  │  PostgreSQL  │  │  PostgreSQL  │
+│  (Llama 3.1) │  │  (E-Store)   │  │  (Categories)│  │  (Orders)    │
+└──────────────┘  └──────────────┘  └──────────────┘  └──────────────┘
 
 External Services:
 • ZEGOCLOUD (Video calls with AES-256)   • Razorpay (Payments)
 • AWS S3 (Document storage)               • Apache Kafka (Async messaging)
+• Groq AI (Symptom analysis)              • Gmail SMTP (OTP emails)
 ```
 
 ### Architectural Patterns Used
@@ -116,11 +124,12 @@ External Services:
 | **API Gateway** | Spring Cloud Gateway | Single entry point, JWT validation, routing |
 | **Service Discovery** | Eureka | Services find each other by name, not IP |
 | **Circuit Breaker** | Resilience4j on Feign clients | Prevent cascade failures |
-| **Cache-Aside** | Redis on doctor listings | Reduce DB load, improve response times |
+| **Cache-Aside** | Redis on doctor listings, OTP storage | Reduce DB load, ephemeral data with TTL |
 | **Event-Driven** | Kafka for notifications | Decouple notification logic from business logic |
 | **CQRS-lite** | Separate read/write paths | Optimize each independently |
 | **Shared Library** | `common-lib` module | DRY — exception handling, ApiResponse |
 | **DTO Layer** | Every service | Never expose JPA entities directly |
+| **AI as a Service** | aiservice → Groq API | Externalized inference, no model hosting required |
 
 ---
 
@@ -155,7 +164,7 @@ External Services:
 - JWT token validation via `JwtAuthGatewayFilter`
 - Routing requests to appropriate microservices via `lb://service-name`
 - CORS handling for frontend
-- Public endpoints whitelist: `/auth/login`, `/auth/signup`, `/auth/refresh`
+- Public endpoints whitelist: `/auth/login`, `/auth/signup`, `/auth/refresh`, `/auth/verify-otp`, `/auth/resend-otp`
 
 **Routing Rules:**
 | Path Pattern | Target Service |
@@ -169,6 +178,7 @@ External Services:
 | `/api/v1/category/**` | categoryservice |
 | `/api/v1/orders/**` | orderservice |
 | `/api/v1/notifications/**` | notificationservice |
+| `/api/v1/ai/**` | aiservice |
 
 ### 3.3 discovery-server (Eureka)
 
@@ -185,15 +195,23 @@ External Services:
 ### 3.4 userservice
 
 **Port:** 8111
-**Database:** PostgreSQL (`delma_user_db`)
+**Database:** PostgreSQL (`delma_user_db`) + Redis (for OTP)
 
 **Responsibilities:**
-- User registration & authentication
+- User registration with email OTP verification
 - JWT token generation (access + refresh)
 - Role management (USER, DOCTOR, ADMIN)
 - Doctor application submission
 - Admin operations (approve doctors, manage users)
 - Secure refresh token rotation
+- Gmail SMTP integration for OTP delivery
+
+**OTP Flow:**
+- 6-digit OTP generated and stored in Redis (key: `otp:{email}`)
+- 10-minute TTL on Redis key — auto-expires
+- One-time use — deleted on successful verification
+- User account stored with `is_verified=false` until OTP confirmed
+- Unverified users cannot login (blocked at authentication)
 
 **Feign Clients:** `DoctorClient` (calls doctorservice for admin operations)
 
@@ -222,6 +240,7 @@ External Services:
 - Appointment booking with payment integration
 - Video call session creation (ZEGOCLOUD)
 - Appointment status tracking
+- Optimistic locking on slots to prevent double-booking
 
 ### 3.7 paymentservice
 
@@ -230,9 +249,10 @@ External Services:
 
 **Responsibilities:**
 - Razorpay payment order creation
-- Payment verification via webhooks
+- Payment signature verification
 - Refund processing
 - Transaction history
+- Supports multiple sources: APPOINTMENT, ORDER (e-store)
 
 ### 3.8 documentservice
 
@@ -286,6 +306,31 @@ External Services:
 - Real-time push notifications
 - Notification history persistence
 
+### 3.13 aiservice (NEW)
+
+**Port:** 8095
+**Tech:** Spring Boot + Groq API (no local DB)
+
+**Responsibilities:**
+- Accept natural language symptom descriptions from patients
+- Call Groq API (Llama 3.1 `llama-3.1-8b-instant`)
+- Parse AI response with strict JSON contract
+- Return doctor specialization recommendation
+- Provide medical disclaimer in every response
+
+**Why Groq:** Sub-second inference latency at OpenAI-compatible API; free tier sufficient for development.
+
+**Prompt Engineering:** Carefully constructed system prompt restricts AI output to a fixed list of specializations matching the platform's doctor categories. If JSON parsing fails, falls back to `General Medicine` to ensure the endpoint never returns 500 errors.
+
+**Response Shape:**
+```json
+{
+  "specialization": "Cardiology",
+  "message": "Based on chest pain symptoms, consult a cardiologist...",
+  "disclaimer": "This is not medical advice. Please consult a qualified doctor."
+}
+```
+
 ---
 
 ## 4. Service Communication
@@ -325,12 +370,17 @@ notificationservice ← consumes from Kafka
 - `notification-events` — for all user-facing notifications
 - `payment-events` — for payment status changes (future)
 
-### Why Both?
+### External API Calls (REST)
+
+**aiservice → Groq API:** Synchronous REST call via `RestTemplate` with Bearer token authentication. Response is parsed using Jackson `ObjectMapper`. Timeouts configured to 30 seconds.
+
+### Why Multiple Communication Patterns?
 
 | Need | Use |
 |------|-----|
 | Need response to continue | Feign (sync) |
 | Side effect, can be delayed | Kafka (async) |
+| External third-party API | RestTemplate |
 | Other service must be available | Feign |
 | Other service can be temporarily down | Kafka |
 
@@ -338,43 +388,94 @@ notificationservice ← consumes from Kafka
 
 ## 5. Core User Flows
 
-### 5.1 User Registration & Login
+### 5.1 User Registration with Email OTP
 
 ```
-┌─────────┐                ┌──────────┐                ┌──────────────┐
-│ Browser │                │ Gateway  │                │ userservice  │
-└────┬────┘                └────┬─────┘                └──────┬───────┘
-     │                          │                             │
-     │ POST /auth/signup        │                             │
-     ├─────────────────────────>│                             │
-     │                          │ POST /auth/signup           │
-     │                          ├────────────────────────────>│
-     │                          │                             │
-     │                          │              Validate input │
-     │                          │            Hash password    │
-     │                          │           Save to DB        │
-     │                          │ ApiResponse<SignupResponse> │
-     │                          │<────────────────────────────│
-     │ 200 OK + user data       │                             │
-     │<─────────────────────────│                             │
-     │                          │                             │
-     │ POST /auth/login         │                             │
-     ├─────────────────────────>│                             │
-     │                          │ POST /auth/login            │
-     │                          ├────────────────────────────>│
-     │                          │              Verify pwd     │
-     │                          │           Generate JWT      │
-     │                          │           Generate refresh  │
-     │                          │           Save refresh DB   │
-     │                          │ JWT + refresh in cookie     │
-     │                          │<────────────────────────────│
-     │ JWT in body,             │                             │
-     │ refresh in HttpOnly cookie                             │
-     │<─────────────────────────│                             │
-     │                          │                             │
+┌─────────┐                ┌──────────┐                ┌──────────────┐                ┌────────┐
+│ Browser │                │ Gateway  │                │ userservice  │                │ Redis  │
+└────┬────┘                └────┬─────┘                └──────┬───────┘                └───┬────┘
+     │                          │                             │                            │
+     │ POST /auth/signup        │                             │                            │
+     │ {name, email, password}  │                             │                            │
+     ├─────────────────────────>│                             │                            │
+     │                          │ POST /auth/signup           │                            │
+     │                          ├────────────────────────────>│                            │
+     │                          │                             │                            │
+     │                          │      Validate input         │                            │
+     │                          │      Check duplicate email  │                            │
+     │                          │      Save user is_verified=false                         │
+     │                          │      Generate 6-digit OTP   │                            │
+     │                          │      Store OTP in Redis     │                            │
+     │                          │      (key: otp:email,       │                            │
+     │                          │       TTL: 10 min)          │                            │
+     │                          │                             ├───────────────────────────>│
+     │                          │      Send OTP via Gmail SMTP│                            │
+     │                          │ ApiResponse(success=true)   │                            │
+     │                          │<────────────────────────────│                            │
+     │ "OTP sent to your email" │                             │                            │
+     │<─────────────────────────│                             │                            │
+     │                          │                             │                            │
+     │ User checks email,       │                             │                            │
+     │ receives 6-digit OTP     │                             │                            │
+     │                          │                             │                            │
+     │ POST /auth/verify-otp    │                             │                            │
+     │ {email, otp}             │                             │                            │
+     ├─────────────────────────>│                             │                            │
+     │                          ├────────────────────────────>│                            │
+     │                          │      GET otp:email from Redis                            │
+     │                          │                             ├───────────────────────────>│
+     │                          │      Match → set is_verified=true                        │
+     │                          │      DELETE otp:email       │                            │
+     │                          │                             ├───────────────────────────>│
+     │                          │ "Email verified, please login"                           │
+     │<─────────────────────────│<────────────────────────────│                            │
+     │                          │                             │                            │
+     │ POST /auth/login         │ (now works — is_verified=true)                           │
+     ├─────────────────────────>│                             │                            │
+     │ JWT + refresh cookie     │                             │                            │
+     │<─────────────────────────│                             │                            │
 ```
 
-### 5.2 Doctor Application Workflow
+**Resend OTP flow:** If user doesn't receive email or OTP expires, `POST /auth/resend-otp` regenerates OTP and re-sends. Resets TTL to fresh 10 minutes.
+
+### 5.2 AI Symptom Checker Flow
+
+```
+┌─────────┐         ┌──────────┐         ┌────────────┐         ┌──────────┐
+│ Browser │         │ Gateway  │         │ aiservice  │         │ Groq API │
+└────┬────┘         └────┬─────┘         └─────┬──────┘         └────┬─────┘
+     │                   │                     │                     │
+     │ POST /api/v1/ai/  │                     │                     │
+     │   symptom-check   │                     │                     │
+     │ {symptoms: "chest │                     │                     │
+     │   pain, fever"}   │                     │                     │
+     ├──────────────────>│                     │                     │
+     │                   ├────────────────────>│                     │
+     │                   │                     │                     │
+     │                   │       Build prompt with strict JSON format│
+     │                   │                     │                     │
+     │                   │                     ├────────────────────>│
+     │                   │       POST /openai/v1/chat/completions    │
+     │                   │       Bearer GROQ_API_KEY                 │
+     │                   │       model: llama-3.1-8b-instant         │
+     │                   │                     │                     │
+     │                   │                     │<────────────────────│
+     │                   │       Parse JSON from response            │
+     │                   │       Fallback to "General Medicine"      │
+     │                   │       if JSON parsing fails               │
+     │                   │                     │                     │
+     │                   │ ApiResponse<SymptomResponse>              │
+     │                   │<────────────────────│                     │
+     │ {specialization,  │                     │                     │
+     │  message,         │                     │                     │
+     │  disclaimer}      │                     │                     │
+     │<──────────────────│                     │                     │
+     │                   │                     │                     │
+     │ Frontend then calls /api/v1/doctor/search/{specialization}    │
+     │ to filter doctors automatically                               │
+```
+
+### 5.3 Doctor Application Workflow
 
 ```
 USER FLOW                     ADMIN FLOW                   POST-APPROVAL
@@ -416,42 +517,53 @@ saves application        Feign → doctorservice
                                           sends email + push
 ```
 
-### 5.3 Appointment Booking + Video Call
+### 5.4 Appointment Booking + Video Call
 
 ```
 1. User browses approved doctors
    GET /api/v1/doctor/all (cached in Redis)
 
+   OR uses AI symptom checker to get filtered list:
+   POST /api/v1/ai/symptom-check → returns specialization
+   GET /api/v1/doctor/search/{specialization} → filtered doctors
+
 2. User views doctor's available slots
-   GET /api/v1/slots/{doctorId}
+   GET /api/v1/appointments/slots?doctorId={id}&date={YYYY-MM-DD}
 
 3. User selects slot, initiates payment
-   POST /api/v1/payments/create-order
+   POST /api/v1/payments/create
+   { amount, refId: "SLOT_{slotId}", sourceType: "APPOINTMENT" }
    → paymentservice creates Razorpay order
-   → returns Razorpay order_id
+   → returns rzpOrderId
 
-4. User completes Razorpay payment
-   Razorpay webhook → paymentservice
-   → verifies signature
-   → updates payment status
+4. Frontend opens Razorpay modal with rzpOrderId
+   User completes payment in modal
 
-5. paymentservice → appointmentservice (Feign)
-   → creates appointment (status: CONFIRMED)
+5. On payment success, frontend calls:
+   POST /api/v1/payments/verify
+   { orderId, paymentId, signature }
+   → paymentservice verifies signature with Razorpay secret
+   → returns 200 on success
+
+6. Frontend then books the appointment:
+   POST /api/v1/appointments/book
+   ?userId=...&doctorId=...&slotId=...
+   → appointmentservice creates appointment with optimistic lock
    → publishes notification event
 
-6. Both patient and doctor receive:
+7. Both patient and doctor receive:
    - Email with appointment details
    - In-app notification
 
-7. At appointment time:
+8. At appointment time:
    GET /api/v1/appointments/{id}/video-token
    → returns ZEGOCLOUD token (AES-256 encrypted session)
 
-8. Both join video call
+9. Both join video call
    Frontend uses ZEGOCLOUD SDK with token
 ```
 
-### 5.4 Document Upload & Sharing
+### 5.5 Document Upload & Sharing
 
 ```
 PATIENT UPLOADS                          DOCTOR VIEWS
@@ -482,7 +594,7 @@ documentservice:
                                     → URL expires in 10 min
 ```
 
-### 5.5 E-Store Order Flow
+### 5.6 E-Store Order Flow
 
 ```
 1. Browse products
@@ -495,11 +607,12 @@ documentservice:
    GET /api/v1/orders/cart/{userId}
 
 4. Checkout — create payment
-   POST /api/v1/payments/create-order
+   POST /api/v1/payments/create
    → Razorpay order_id
 
 5. Complete Razorpay payment
-   → webhook to paymentservice
+   POST /api/v1/payments/verify
+   → signature verified
 
 6. paymentservice → orderservice (Feign)
    → creates Order with status PLACED
@@ -519,14 +632,28 @@ documentservice:
 ### 6.1 userservice (Public + Auth Required)
 
 #### `POST /auth/signup`
-Create new user account.
+Create new user account. Sends OTP email. User stored as unverified.
 ```json
-Request:  { "email": "user@example.com", "password": "secret123", "username": "John Doe" }
-Response: { "success": true, "message": "Signup successful", "data": { "userId": 1, "email": "..." } }
+Request:  { "name": "John Doe", "email": "user@example.com", "password": "secret123" }
+Response: { "success": true, "message": "OTP sent to your email. Please verify." }
+```
+
+#### `POST /auth/verify-otp` (NEW)
+Verify the OTP sent during signup. Marks user as verified.
+```json
+Request:  { "email": "user@example.com", "otp": "123456" }
+Response: { "success": true, "message": "Email verified successfully" }
+```
+
+#### `POST /auth/resend-otp` (NEW)
+Regenerate and resend OTP. Useful when OTP expires or email is missed.
+```json
+Request:  { "email": "user@example.com" }
+Response: { "success": true, "message": "OTP resent successfully" }
 ```
 
 #### `POST /auth/login`
-Authenticate user, return JWT.
+Authenticate user, return JWT. Blocks login if `is_verified=false`.
 ```json
 Request:  { "email": "user@example.com", "password": "secret123" }
 Response: { "success": true, "data": { "jwtToken": "eyJ...", "userId": 1, "role": "USER", "username": "John" } }
@@ -558,10 +685,6 @@ Get user by ID.
 
 #### `POST /api/users/apply-doctor` 🔒 USER role
 Submit doctor application.
-```json
-Request:  { "specialization": "Cardiology", "experience": 5, ... }
-Response: { "success": true, "message": "Doctor application submitted successfully" }
-```
 
 #### `GET /api/users/doctors` 🔒 Auth required
 Get all approved doctors (proxied to doctorservice).
@@ -578,51 +701,24 @@ Get all pending doctor applications.
 #### `GET /api/v1/admin/getall-users` 🔒 ADMIN
 Get all registered users.
 
-#### `PUT /api/v1/admin/add-role/doctor/{userId}` 🔒 ADMIN (internal)
-Add DOCTOR role to user. Called by doctorservice via Feign.
-
 ---
 
 ### 6.2 doctorservice
 
 #### `POST /api/v1/doctor/apply` 🔒 Auth required
 Submit doctor application (called from userservice).
-```json
-Request: { "userId": "1", "specialization": "Cardiology", "experience": 5 }
-```
 
 #### `GET /api/v1/doctor/all` 🟢 Cached (Redis, 10 min TTL)
 Get all approved doctors.
-```json
-Response: {
-  "success": true,
-  "data": [
-    {
-      "id": 1,
-      "userId": "1",
-      "firstName": "John",
-      "lastName": "Doe",
-      "specialization": "Cardiology",
-      "experience": 5,
-      "feesPerConsultation": 500.0,
-      "status": "APPROVED"
-    }
-  ]
-}
-```
 
 #### `GET /api/v1/doctor/search/{keyword}`
-Search approved doctors by name or specialization (DB-level filter).
+Search approved doctors by name or specialization (used by AI symptom checker).
 
 #### `GET /api/v1/doctor/pending` 🔒 ADMIN, 🟢 Cached
 Get pending doctor applications.
 
 #### `PUT /api/v1/doctor/approve/{id}` 🔒 ADMIN, 🔄 Cache evicted
-Approve a doctor application. Triggers:
-- DB status update
-- Cache eviction
-- Feign call to userservice (add role)
-- Kafka event for notification
+Approve a doctor application.
 
 #### `PUT /api/v1/doctor/reject/{id}` 🔒 ADMIN, 🔄 Cache evicted
 Reject a doctor application.
@@ -631,43 +727,50 @@ Reject a doctor application.
 
 ### 6.3 appointmentservice
 
-#### `POST /api/v1/slots/create` 🔒 DOCTOR
-Create availability slot.
-```json
-Request: { "doctorId": 1, "startTime": "2026-05-01T10:00", "endTime": "2026-05-01T10:30" }
+#### `GET /api/v1/appointments/slots`
+Get available slots for a doctor on a date.
 ```
-
-#### `GET /api/v1/slots/doctor/{doctorId}`
-Get all available slots for a doctor.
+Query: ?doctorId=1&date=2026-05-15
+```
 
 #### `POST /api/v1/appointments/book` 🔒 USER
 Book an appointment after payment.
-```json
-Request: { "slotId": 5, "patientId": 1, "paymentId": "razorpay_xxx" }
+```
+Query: ?userId=1&doctorId=2&slotId=5
 ```
 
-#### `GET /api/v1/appointments/user/{userId}` 🔒 Auth
-Get user's appointments (as patient or doctor).
+#### `GET /api/v1/appointments/user` 🔒 Auth
+Get user's appointments (as patient).
+```
+Query: ?userId=1
+```
 
-#### `GET /api/v1/appointments/{id}/video-token` 🔒 Auth
-Generate ZEGOCLOUD video session token (AES-256 encrypted).
+#### `GET /api/v1/appointments/doctor` 🔒 Auth
+Get doctor's appointments.
+```
+Query: ?doctorId=2
+```
 
 ---
 
 ### 6.4 paymentservice
 
-#### `POST /api/v1/payments/create-order`
+#### `POST /api/v1/payments/create`
 Create Razorpay order for appointment or e-store.
 ```json
-Request: { "amount": 50000, "currency": "INR", "type": "APPOINTMENT", "referenceId": 123 }
-Response: { "success": true, "data": { "razorpayOrderId": "order_xxx", "amount": 50000 } }
+Request: { "amount": 50000, "refId": "SLOT_5", "sourceType": "APPOINTMENT" }
+Response: { "success": true, "data": "order_xxx" }
+```
+
+#### `POST /api/v1/payments/verify`
+Verify Razorpay payment signature.
+```json
+Request: { "orderId": "order_xxx", "paymentId": "pay_yyy", "signature": "..." }
+Response: { "success": true, "message": "Payment verified" }
 ```
 
 #### `POST /api/v1/payments/webhook`
-Razorpay webhook for payment status updates.
-
-#### `POST /api/v1/payments/verify`
-Verify payment signature client-side.
+Razorpay webhook for asynchronous payment status updates.
 
 ---
 
@@ -675,10 +778,6 @@ Verify payment signature client-side.
 
 #### `POST /api/v1/documents/upload` 🔒 Auth, multipart
 Upload document to S3.
-```json
-Form: file (binary), userId (string)
-Response: { "success": true, "data": { "name": "...", "url": "...", "type": "application/pdf" } }
-```
 
 #### `GET /api/v1/documents/getall-documents/{userId}` 🔒 Auth
 Get user's documents with presigned S3 URLs.
@@ -688,41 +787,32 @@ Delete from both DB and S3.
 
 ---
 
-### 6.6 productservice
+### 6.6 aiservice (NEW)
 
-#### `GET /api/v1/product` — List all products (paginated)
-#### `GET /api/v1/product/{id}` — Get product details
-#### `POST /api/v1/product` 🔒 ADMIN — Add product
-#### `PUT /api/v1/product/{id}` 🔒 ADMIN — Update product
-#### `DELETE /api/v1/product/{id}` 🔒 ADMIN — Delete product
-#### `GET /api/v1/product/category/{categoryId}` — Filter by category
+#### `POST /api/v1/ai/symptom-check`
+Analyze symptoms with Groq AI and recommend a specialization.
+```json
+Request:  { "symptoms": "I have chest pain and shortness of breath" }
+Response: {
+  "success": true,
+  "data": {
+    "specialization": "Cardiology",
+    "message": "Based on your symptoms, consulting a cardiologist would be appropriate.",
+    "disclaimer": "This is not medical advice. Please consult a qualified doctor."
+  }
+}
+```
 
----
-
-### 6.7 categoryservice
-
-#### `GET /api/v1/category` — List all categories
-#### `POST /api/v1/category` 🔒 ADMIN — Create category
-#### `PUT /api/v1/category/{id}` 🔒 ADMIN — Update category
-#### `DELETE /api/v1/category/{id}` 🔒 ADMIN — Delete category
-
----
-
-### 6.8 orderservice
-
-#### `POST /api/v1/orders/cart/add` 🔒 USER — Add item to cart
-#### `GET /api/v1/orders/cart/{userId}` 🔒 USER — Get cart
-#### `DELETE /api/v1/orders/cart/{userId}/item/{productId}` 🔒 USER — Remove item
-#### `POST /api/v1/orders/checkout` 🔒 USER — Place order
-#### `GET /api/v1/orders/user/{userId}` 🔒 USER — Order history
-#### `PUT /api/v1/orders/{id}/status` 🔒 ADMIN — Update order status
+**Notes:**
+- Endpoint is public — no JWT required (AI analysis is non-sensitive)
+- If Groq API fails or returns malformed JSON, falls back to `General Medicine`
+- Specialization is constrained to a fixed list matching platform's doctor categories
 
 ---
 
-### 6.9 notificationservice
+### 6.7 productservice / categoryservice / orderservice / notificationservice
 
-#### `GET /api/v1/notifications/{userId}` 🔒 Auth — Get user's notifications
-#### `PUT /api/v1/notifications/{id}/read` 🔒 Auth — Mark as read
+See section 3 for module responsibilities. Standard REST CRUD endpoints with `ApiResponse<T>` wrapper.
 
 ---
 
@@ -735,7 +825,8 @@ User
 ├── username: String
 ├── email: String (unique)
 ├── password: String (BCrypt hashed)
-├── roles: Set<Role>          [USER, DOCTOR, ADMIN]
+├── isVerified: Boolean   [false until OTP verified]
+├── roles: Set<Role>      [USER, DOCTOR, ADMIN]
 ├── isDoctor: String
 ├── isAdmin: String
 └── createdAt: LocalDateTime
@@ -746,6 +837,11 @@ RefreshToken
 ├── token: String
 ├── expiresAt: LocalDateTime
 └── createdAt: LocalDateTime
+
+OTP (stored in Redis, not Postgres)
+├── key: "otp:{email}"
+├── value: "123456"      [6-digit code]
+└── TTL: 600 seconds     [10 minutes]
 ```
 
 ### 7.2 Doctor Entity (doctorservice)
@@ -774,15 +870,27 @@ DoctorSlot
 Appointment
 ├── id: Long (PK)
 ├── slotId: Long (FK)
-├── patientId: Long
+├── userId: Long (patient)
 ├── doctorId: Long
-├── paymentId: String
-├── status: AppointmentStatus [CONFIRMED, COMPLETED, CANCELLED]
-├── videoSessionId: String
+├── status: AppointmentStatus [BOOKED, COMPLETED, CANCELLED]
 └── createdAt: LocalDateTime
 ```
 
-### 7.4 Document Entity (documentservice)
+### 7.4 Payment Entity (paymentservice)
+```
+Payment
+├── id: Long (PK)
+├── userId: Long
+├── refId: String         [e.g. "SLOT_5" or "ORDER_12"]
+├── sourceType: String    [APPOINTMENT, ORDER]
+├── razorpayOrderId: String
+├── razorpayPaymentId: String
+├── amount: Long
+├── status: PaymentStatus [CREATED, SUCCESS, FAILED]
+└── createdAt: LocalDateTime
+```
+
+### 7.5 Document Entity (documentservice)
 ```
 Document
 ├── id: Long (PK)
@@ -794,7 +902,18 @@ Document
 └── uploadedAt: LocalDateTime
 ```
 
-### 7.5 Order & Product (e-store)
+### 7.6 AI Service DTOs (aiservice)
+```
+SymptomRequest
+└── symptoms: String       [user's plain English description]
+
+SymptomResponse
+├── specialization: String [recommended doctor specialization]
+├── message: String        [explanation from AI]
+└── disclaimer: String     [medical disclaimer]
+```
+
+### 7.7 Order & Product (e-store)
 ```
 Product
 ├── id: Long (PK)
@@ -818,13 +937,6 @@ Order
 ├── status: OrderStatus [PLACED, SHIPPED, DELIVERED, CANCELLED]
 ├── shippingAddress: String
 └── createdAt: LocalDateTime
-
-OrderItem
-├── id: Long (PK)
-├── orderId: Long (FK)
-├── productId: Long
-├── quantity: Integer
-└── priceAtPurchase: BigDecimal
 ```
 
 ---
@@ -841,6 +953,14 @@ OrderItem
 | `getPendingApplications()` | `@Cacheable` | `doctors::pending` | 10 min |
 | `approveApplication()` | `@CacheEvict allEntries=true` | (clears all) | — |
 | `rejectApplication()` | `@CacheEvict allEntries=true` | (clears all) | — |
+
+**userservice — Redis for OTP storage.**
+
+| Use Case | Key Pattern | Value | TTL |
+|----------|-------------|-------|-----|
+| OTP during signup | `otp:{email}` | 6-digit code | 10 min |
+
+OTPs are deleted on successful verification (one-time use). TTL provides automatic cleanup of unverified attempts.
 
 ### Why TTL Even With Cache Eviction?
 
@@ -872,6 +992,23 @@ HIT        MISS
 
 ## 9. Authentication & Security
 
+### Account Verification (Email OTP)
+
+Every new user must verify their email before logging in.
+
+**Why:**
+- Prevents bot signups
+- Confirms valid contact channel for password resets, appointment notifications
+- Industry standard for healthcare platforms (where contact accuracy matters)
+
+**Implementation:**
+- 6-digit OTP generated using `SecureRandom`
+- Stored in Redis with 10-minute TTL — server-side state, not client-controlled
+- Delivered via Gmail SMTP (App Password authentication)
+- User table has `is_verified` boolean column
+- `User.isEnabled()` returns `is_verified` — Spring Security blocks unverified logins
+- One-time use — OTP deleted from Redis on successful verification
+
 ### JWT Token Architecture
 
 **Access Token (15 minutes)**
@@ -902,7 +1039,8 @@ Request arrives at gateway
         │
         ▼
 Is path in whitelist?
-(/auth/login, /auth/signup, /auth/refresh)
+(/auth/login, /auth/signup, /auth/refresh,
+ /auth/verify-otp, /auth/resend-otp, /api/v1/ai/**)
         │
    ┌────┴────┐
    │         │
@@ -928,6 +1066,13 @@ Custom AES-256 encryption engine on top of ZEGOCLOUD:
 2. Both participants get the key via secure JWT-validated channel
 3. Audio/video stream encrypted end-to-end
 4. Key destroyed after session ends
+
+### Payment Security (Razorpay)
+
+- Razorpay order is created server-side — frontend never sees the key secret
+- Payment signature verified on backend after Razorpay returns success
+- HMAC-SHA256 verification using Razorpay's webhook secret
+- Failed signature verification rejects the payment entirely
 
 ---
 
@@ -979,342 +1124,261 @@ Patient A thread                    Patient B thread
 RESULT: Two appointments for the same slot!
 ```
 
-This is called a **Time-of-Check to Time-of-Use (TOCTOU)** race condition. It exists in any system that does check-then-write without atomicity — flight booking, hotel reservations, ticketing systems, inventory management.
-
-#### Why @Transactional Alone Is Not Enough
-
-The default isolation level in Spring is `READ_COMMITTED`, which prevents reading uncommitted data but allows two concurrent transactions to read the same committed data and both write:
-
-```
-Patient A transaction:
-  reads slot → AVAILABLE
-  saves slot → BOOKED
-  commits ✅
-
-Patient B transaction (overlapping):
-  reads slot → AVAILABLE  ← reads BEFORE A commits
-  saves slot → BOOKED     ← also saves successfully
-  commits ✅              ← both succeed 💥
-```
-
-`SERIALIZABLE` isolation would prevent this but locks the entire table — too expensive for production.
+This is called a **Time-of-Check to Time-of-Use (TOCTOU)** race condition.
 
 #### The Solution: Optimistic Locking with @Version
 
-**Add `@Version` to the entity:**
 ```java
 @Entity
 public class DoctorSlot {
-    @Id
-    private Long id;
-
-    @Enumerated(EnumType.STRING)
-    private SlotStatus status;
-
-    @Version
-    private Long version;
+    @Id private Long id;
+    @Enumerated(EnumType.STRING) private SlotStatus status;
+    @Version private Long version;
 }
 ```
 
-Hibernate automatically modifies every UPDATE on this table to include a version check:
-
+Hibernate automatically adds version check to UPDATE statements:
 ```sql
--- Without @Version
-UPDATE doctor_slot SET status = 'BOOKED' WHERE id = 5
-
--- With @Version (Hibernate adds version check automatically)
-UPDATE doctor_slot SET status = 'BOOKED', version = 2
-WHERE id = 5 AND version = 1
+UPDATE doctor_slot SET status='BOOKED', version=2
+WHERE id=5 AND version=1
 ```
 
-**The race condition with @Version:**
-```
-DB before: slot id=5, status=AVAILABLE, version=1
-
-Patient A thread                    Patient B thread
-────────────────                    ────────────────
-1. SELECT → version=1
-                                    2. SELECT → version=1
-
-3. Status check passes ✅
-                                    4. Status check passes ✅
-
-5. UPDATE ... WHERE id=5
-   AND version=1
-   → 1 row affected ✅
-   → version is now 2
-                                    6. UPDATE ... WHERE id=5
-                                       AND version=1
-                                       → 0 rows affected 🔥
-                                       (DB has version=2 now)
-                                       → OptimisticLockException
-                                       → Transaction rolls back
-
-RESULT: Only ONE appointment created ✅
-```
-
-**Convert the exception to a clean 409 response:**
-```java
-@RestControllerAdvice
-public class AppointmentExceptionHandler {
-
-    @ExceptionHandler(ObjectOptimisticLockingFailureException.class)
-    public ResponseEntity<ApiResponse<Void>> handleOptimisticLock(
-            ObjectOptimisticLockingFailureException ex) {
-        log.warn("Concurrent booking conflict: {}", ex.getMessage());
-        return ResponseEntity
-                .status(HttpStatus.CONFLICT)
-                .body(ApiResponse.failure(
-                    "This slot was just booked by someone else. Please select another slot.",
-                    "SLOT_CONFLICT"
-                ));
-    }
-}
-```
-
-#### Optimistic vs Pessimistic Locking — The Tradeoff
-
-| | Optimistic (used in Delma) | Pessimistic |
-|---|---|---|
-| **Strategy** | Assume conflicts are rare | Assume conflicts will happen |
-| **Mechanism** | Version check at write time | Lock row at read time |
-| **SQL** | `UPDATE ... WHERE version=?` | `SELECT ... FOR UPDATE` |
-| **Read performance** | Fast (no locking) | Slow (holds lock) |
-| **Best for** | Read-heavy workloads | Write-heavy contention |
-| **Booking systems?** | ✅ Optimistic | ❌ Too expensive |
-
-For Delma, optimistic locking is the right choice: most users browse slots without booking, actual simultaneous bookings of the same slot are rare, and we want read operations (slot listing) to remain fast.
-
-#### Three Layers Working Together
-
-The solution requires three components working in unison:
-
-1. **`@Version`** on `DoctorSlot` entity — enables version checking
-2. **`@Transactional`** on `bookAppointment()` — ensures rollback on conflict
-3. **`AppointmentExceptionHandler`** — converts exception to clean 409 response
-
-```
-bookAppointment() called
-        │
-        ▼
-@Transactional begins
-        │
-        ▼
-findById → SELECT id, status, version FROM doctor_slot WHERE id=?
-        │
-        ▼
-slotRepository.save(slot)
-→ UPDATE doctor_slot SET status='BOOKED', version=2
-  WHERE id=? AND version=1
-  ├─ 1 row updated → success, continue
-  └─ 0 rows updated → ObjectOptimisticLockingFailureException
-                    → @Transactional rolls back
-                    → AppointmentExceptionHandler returns 409
-```
+When two threads attempt to update with the same version, only one succeeds. The other gets `ObjectOptimisticLockingFailureException`, which is caught and returned as HTTP 409 to the client.
 
 ---
 
 ### 10.2 Cache Invalidation Strategy
 
-#### The Problem
-
-After adding Redis caching to doctor listings (`@Cacheable` on `getAllDoctors`), a stale data risk emerged. When an admin approves a new doctor, the cached "all approved doctors" list still shows the old data — patients could browse for several minutes without seeing the new doctor.
-
-#### The Solution: Two-Layer Defense
-
-**Layer 1 — Reactive eviction with `@CacheEvict`:**
-```java
-@CacheEvict(value = "doctors", allEntries = true)
-public void approveApplication(Long id) {
-    // ... approval logic
-}
-```
-
-When `approveApplication` is called, Spring deletes ALL entries under the `doctors` cache. Next read hits the database and fresh data is cached.
-
-**Layer 2 — Defensive TTL of 10 minutes:**
-```java
-RedisCacheConfiguration.defaultCacheConfig()
-    .entryTtl(Duration.ofMinutes(10))
-```
-
-Even if cache eviction somehow fails — Redis is briefly unavailable, a bug skips the eviction, or someone updates the database directly — the cache automatically expires after 10 minutes.
-
-#### Why Both?
-
-This is **defense in depth** — never rely on a single mechanism for correctness in distributed systems.
-
-| Mechanism | When | Purpose |
-|-----------|------|---------|
-| `@CacheEvict` | On every approve/reject call | Primary — immediate freshness |
-| TTL (10 min) | Every 10 min automatically | Safety net for failure scenarios |
-
-The system has guaranteed bounded staleness: data is at most 10 minutes old in the worst case, but typically fresh within milliseconds.
+When admin approves a doctor, the cached "all approved doctors" list must update. Solution combines `@CacheEvict` (immediate eviction on state change) with TTL of 10 minutes (safety net) — defense in depth.
 
 ---
 
 ### 10.3 Service Discovery vs Hardcoded URLs
 
-#### The Problem
-
-Initial implementation used hardcoded URLs in Feign clients:
-```java
-@FeignClient(name = "doctorservice", url = "http://localhost:8010")
-```
-
-This created several issues:
-- Cannot scale horizontally — only one address known
-- Service moves break the system
-- Cannot do load balancing
-- Different environments (dev, staging, prod) need code changes
-
-#### The Solution: Eureka Service Discovery
-
-Removed hardcoded URLs and let Eureka resolve at runtime:
-```java
-@FeignClient(name = "doctorservice")  // No url
-```
-
-**How it works:**
-```
-1. doctorservice instance starts on port 8010
-   → registers with Eureka: "I am doctorservice at 192.168.1.5:8010"
-
-2. userservice needs to call doctorservice
-   → Feign asks Eureka: "Where is doctorservice?"
-   → Eureka returns: "192.168.1.5:8010"
-   → Feign makes the HTTP call
-
-3. If 3 instances of doctorservice are running:
-   → Eureka returns different addresses round-robin
-   → Load balanced automatically
-
-4. If an instance crashes:
-   → Eureka stops sending traffic to it (heartbeat timeout)
-   → Other instances continue serving requests
-```
-
-The same pattern is used in the gateway with `lb://servicename` URIs — `lb` means "load balanced via service discovery."
+Initial Feign clients had hardcoded `url = "http://localhost:8010"`. Removed in favor of Eureka-based discovery via `@FeignClient(name = "doctorservice")` — services find each other dynamically, supporting horizontal scaling and zero-downtime deploys.
 
 ---
 
 ### 10.4 Spring Cloud Gateway 5.0 Configuration Migration
 
-#### The Problem
+After upgrading to Spring Cloud 2025.x (Gateway 5.0), routes silently stopped working. Root cause: configuration namespace moved from `spring.cloud.gateway.routes` to `spring.cloud.gateway.server.webflux.routes`. Old config keys are silently ignored — no warning, no error.
 
-After upgrading to Spring Cloud 2025.x (Gateway 5.0), all routes silently stopped working. Gateway started successfully, no errors in logs, but every request returned 404.
-
-#### Root Cause
-
-Spring Cloud Gateway 5.0 introduced support for both reactive and servlet-based gateways, requiring a new namespace for configuration:
-
-```yaml
-# Old (Spring Cloud 2024.x and earlier) — silently ignored in 5.0
-spring:
-  cloud:
-    gateway:
-      routes: [...]
-
-# New (Spring Cloud 2025.x / Gateway 5.0) — required
-spring:
-  cloud:
-    gateway:
-      server:
-        webflux:
-          routes: [...]
-```
-
-#### Why It Was Hard To Diagnose
-
-This was a **silent misconfiguration** — the worst kind of bug. No exception, no warning, no error log. The system appeared healthy:
-- Gateway started successfully ✅
-- Eureka registration worked ✅
-- Route predicate factories logged as loaded ✅
-- Requests reached the gateway ✅
-
-But every request returned 404 because routes were registered under the wrong configuration key.
-
-#### Lessons Learned
-
-When upgrading major versions of any framework, always read the migration guide first. Spring Cloud, Spring Boot, Hibernate — all publish migration guides between major versions that list every breaking change. Ten minutes of reading saves hours of debugging.
+**Lesson:** Always read migration guides for major framework upgrades.
 
 ---
 
 ### 10.5 Inter-Service Contract Evolution
 
-#### The Problem
-
-After migrating doctorservice to return `ApiResponse<List<DoctorResponse>>` instead of raw `List<DoctorResponse>`, the userservice Feign client started failing with deserialization errors:
-
-```
-Cannot construct instance of `ApiResponse` (no Creators, like default 
-constructor, exist): cannot deserialize from Object value
-```
-
-#### Two Issues Combined
-
-**Issue 1 — Mismatched return type:**
-```java
-// userservice's Feign client expected:
-List<DoctorResponse> getAllDoctors();
-
-// But doctorservice now returns:
-ApiResponse<List<DoctorResponse>> getAllDoctors();
-```
-
-**Issue 2 — `ApiResponse` had no Jackson constructor:**
-```java
-// ApiResponse.java in common-lib
-public class ApiResponse<T> {
-    private final Boolean success;
-    private final String message;
-    private final T data;
-
-    private ApiResponse(...) { ... }  // private — Jackson can't access
-}
-```
-
-#### The Solution
-
-**Update Feign client signature:**
-```java
-@FeignClient(name = "doctorservice")
-public interface DoctorClient {
-    @GetMapping("/api/v1/doctor/all")
-    ApiResponse<List<DoctorResponse>> getAllDoctors();
-}
-```
-
-**Add `@JsonCreator` to ApiResponse:**
-```java
-@JsonCreator
-private ApiResponse(
-    @JsonProperty("success") Boolean success,
-    @JsonProperty("message") String message,
-    @JsonProperty("data") T data,
-    @JsonProperty("errorCode") String errorCode) {
-    // ...
-}
-```
-
-`@JsonCreator` tells Jackson to use this constructor for deserialization. Without it, Jackson cannot construct the object since the constructor is private.
-
-#### Lesson: Contract Changes Cascade
-
-In microservices, changing a service's response shape affects every other service that consumes it. A "small refactor" in one service breaks N other services. Strategies to manage this:
-
-1. **API versioning** — `/api/v1/doctor/all` vs `/api/v2/doctor/all`
-2. **Backward-compatible changes** — add fields, never remove
-3. **Coordinated deployment** — deploy producer + consumers together
-4. **Contract testing** — Pact, Spring Cloud Contract
-
-For Delma, since it's a personal project, coordinated deployment is sufficient. In a real product environment with multiple teams, contract testing becomes essential.
+When doctorservice changed return type from `List<DoctorResponse>` to `ApiResponse<List<DoctorResponse>>`, all Feign clients broke with deserialization errors. Fix: update client signatures + add `@JsonCreator` to `ApiResponse` constructor for Jackson deserialization.
 
 ---
 
-## 11. Local Setup
+### 10.6 OTP Implementation: Why Redis Over Postgres
 
-### Prerequisites
+#### The Problem
+
+OTPs need to be:
+1. Short-lived (auto-delete after 10 minutes)
+2. Read-heavy during verification window
+3. Deleted after one use
+
+#### Why Redis Won
+
+| Aspect | Postgres | Redis |
+|--------|----------|-------|
+| **TTL** | Manual cleanup job needed | Native `EXPIRE` command |
+| **Read speed** | ~5ms with index | <1ms |
+| **Schema overhead** | Need table, indexes, migrations | Just key-value |
+| **Cleanup** | Cron job to delete expired rows | Automatic |
+
+For ephemeral data with strict TTL, Redis is the natural fit. Code is simpler:
+```java
+redisTemplate.opsForValue().set("otp:" + email, otp, 10, TimeUnit.MINUTES);
+```
+
+When Postgres would be wrong: persistent data, complex queries, transactional consistency with other tables. None of those apply to OTPs.
+
+---
+
+### 10.7 Email Password Truncation Bug
+
+#### The Problem
+
+Gmail App Password was failing authentication intermittently. SMTP returned `Username and Password not accepted` despite correct credentials.
+
+#### Root Cause
+
+Gmail App Password copied with spaces (`juzb iuao ofjz ztsb`). In `.env` file, the variable was being read by shell which stripped at the first space — only `juzb` was being used as the password.
+
+#### The Fix
+
+Removed all spaces from the App Password in `.env`:
+```
+# Wrong
+MAIL_PASSWORD=juzb iuao ofjz ztsb
+
+# Right
+MAIL_PASSWORD=juzbiuaoofjzztsb
+```
+
+**Lesson:** Environment variables in `.env` files don't handle spaces gracefully. Always validate variable values inside the container with `docker exec <container> env | grep MAIL`.
+
+---
+
+### 10.8 Frontend Race Condition: Filter Stacking
+
+When users applied multiple filters in sequence (e.g. Cardiology → then Female), the second filter was applied on already-filtered results instead of the original list, producing incorrect results.
+
+#### Root Cause
+
+```typescript
+const handleFilter = () => {
+  let filtered = [...memoizedDocs]; // ← Already filtered!
+  // Apply filters...
+};
+```
+
+#### The Fix
+
+Introduced `originalDocs` state that always holds the unfiltered list:
+```typescript
+const [docs, setDocs] = useState<DoctorInputProps[]>([]);
+const [originalDocs, setOriginalDocs] = useState<DoctorInputProps[]>([]);
+
+const handleFilter = () => {
+  let filtered = [...originalDocs]; // ← Always full list
+  // Apply filters...
+  setDocs(filtered);
+};
+```
+
+**Lesson:** In React, distinguish between "source of truth" state and "derived/displayed" state. Filters should always be a pure function of the source.
+
+---
+
+### 10.9 Razorpay Frontend Integration: Token Mutation Bug
+
+#### The Problem
+
+After Razorpay payment succeeded, `verify` endpoint returned 500. Frontend was sending `orderId: undefined`.
+
+#### Root Cause
+
+Two bugs combined:
+
+1. **Wrong response field access:**
+   ```typescript
+   // Wrong — backend returns ApiResponse<String>
+   order_id: data.rzpOrderId
+   
+   // Right — actual orderId is at .data.data
+   order_id: response.data.data
+   ```
+
+2. **Axios interceptor mutating Razorpay response:**
+   ```typescript
+   // Interceptor was adding token to ALL request bodies
+   config.data = { ...config.data, token: jwt };
+   // This mutated the Razorpay response object passed to verify
+   ```
+
+#### The Fix
+
+- Removed token-injection in axios interceptor (JWT is already in Authorization header)
+- Fixed response field access to `response.data.data`
+
+**Lesson:** Be very careful with axios interceptors that mutate request data. JWT belongs in headers, not body.
+
+---
+
+## 11. Deployment (Docker + CI/CD)
+
+### Docker Containerization
+
+Every service has its own `Dockerfile` and is published to Docker Hub. The full stack runs via `docker-compose up`.
+
+**docker-compose.yml** orchestrates:
+- 13 microservices (Spring Boot)
+- PostgreSQL 16
+- Redis 7
+- Apache Kafka 3.x + Zookeeper
+
+All services communicate over a shared Docker network using service names (no IP addresses).
+
+### CI/CD Pipeline (GitHub Actions)
+
+`.github/workflows/ci.yml` triggers on push to `main`:
+
+```
+┌────────────────────────────────────────────────────────┐
+│  GitHub Actions Workflow                                │
+├────────────────────────────────────────────────────────┤
+│  1. Checkout code                                       │
+│  2. Set up JDK 21                                       │
+│  3. Cache Maven dependencies                            │
+│  4. Run `mvn clean package -DskipTests`                 │
+│     → Builds all services in dependency order           │
+│                                                         │
+│  5. Set up Docker Buildx (multi-platform support)       │
+│  6. Login to Docker Hub                                 │
+│                                                         │
+│  7. For each service (parallel jobs):                   │
+│     ├─ Build Docker image                               │
+│     ├─ Tag as aakash354/delma-<service>:latest          │
+│     ├─ Build for linux/amd64,linux/arm64                │
+│     └─ Push to Docker Hub                               │
+└────────────────────────────────────────────────────────┘
+```
+
+**Why multi-arch builds:** Developer machines (Apple Silicon `arm64`) and production servers (typically `amd64`) need the same images. Buildx creates a manifest that auto-selects the right architecture.
+
+### Environment Variables (Production)
+
+All secrets are injected via Docker Compose environment variables, never committed:
+
+```yaml
+environment:
+  - JWT_SECRET=${JWT_SECRET}
+  - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+  - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+  - AWS_S3_BUCKET=${AWS_S3_BUCKET}
+  - RAZORPAY_KEY_ID=${RAZORPAY_KEY_ID}
+  - RAZORPAY_KEY_SECRET=${RAZORPAY_KEY_SECRET}
+  - GROQ_API_KEY=${GROQ_API_KEY}
+  - MAIL_USERNAME=${MAIL_USERNAME}
+  - MAIL_PASSWORD=${MAIL_PASSWORD}
+```
+
+`.env` is gitignored. `application.yml` files for services are also gitignored except for selected ones needed by CI (`!aiservice/src/main/resources/application.yml`, `!gateway/...`, `!paymentservice/...`).
+
+---
+
+## 12. Local Setup
+
+### Option A: Docker Compose (Recommended)
+
+```bash
+# 1. Clone repo
+git clone https://github.com/AakashTyagi354/delma2.0_spring_microservice.git
+cd delma2.0_spring_microservice
+
+# 2. Create .env file with required secrets
+cp .env.example .env
+# Edit .env and fill in your secrets
+
+# 3. Start everything
+docker-compose up -d
+
+# 4. Verify
+docker-compose ps
+# All 13 services + Postgres + Redis + Kafka should be "Up"
+```
+
+Eureka dashboard at http://localhost:8761 confirms all services registered.
+
+### Option B: Manual (For Development)
+
+#### Prerequisites
 - **Java 21** (LTS — required, Java 25 may have Lombok issues)
 - **Maven 3.9+**
 - **PostgreSQL 16** running on `localhost:5432`
@@ -1322,8 +1386,7 @@ For Delma, since it's a personal project, coordinated deployment is sufficient. 
 - **Apache Kafka** running on `localhost:9092`
 - **Node.js 18+** (for frontend)
 
-### Database Setup
-Create databases for each service:
+#### Database Setup
 ```sql
 CREATE DATABASE delma_user_db;
 CREATE DATABASE delma_doctor_db;
@@ -1334,57 +1397,51 @@ CREATE DATABASE delma_product_db;
 CREATE DATABASE delma_category_db;
 CREATE DATABASE delma_order_db;
 CREATE DATABASE delma_notification_db;
+-- Note: aiservice does not need a database
 ```
 
-### Build Everything
+#### Build
 ```bash
 mvn clean install -DskipTests
 ```
 
-### Startup Order (CRITICAL)
+#### Startup Order (CRITICAL)
 ```bash
-# Terminal 1: Eureka first (services need to register)
+# 1. Discovery first
 cd discovery-server && mvn spring-boot:run
 
-# Terminal 2: Redis (already running via brew services)
-brew services start redis
+# 2. Each microservice (separate terminals)
+cd userservice && mvn spring-boot:run -Dspring-boot.run.profiles=local
+cd doctorservice && mvn spring-boot:run -Dspring-boot.run.profiles=local
+# ... etc for each service
+cd aiservice && mvn spring-boot:run -Dspring-boot.run.profiles=local
 
-# Terminal 3: Kafka (start zookeeper first if needed)
-kafka-server-start /opt/homebrew/etc/kafka/server.properties
-
-# Terminals 4-13: Each microservice
-cd userservice && mvn spring-boot:run
-cd doctorservice && mvn spring-boot:run
-cd appointmentservice && mvn spring-boot:run
-cd paymentservice && mvn spring-boot:run
-cd documentservice && mvn spring-boot:run
-cd productservice && mvn spring-boot:run
-cd categoryservice && mvn spring-boot:run
-cd orderservice && mvn spring-boot:run
-cd notificationservice && mvn spring-boot:run
-
-# Terminal 14: Gateway last
-cd gateway && mvn spring-boot:run
+# 3. Gateway last
+cd gateway && mvn spring-boot:run -Dspring-boot.run.profiles=local
 ```
 
 ### Verify Setup
 - Eureka Dashboard: http://localhost:8761
 - Gateway: http://localhost:8089/auth/login
-- Each service: `http://localhost:<port>/actuator/health`
+- AI Service: `POST http://localhost:8089/api/v1/ai/symptom-check` with `{"symptoms":"headache"}`
 
-### Environment Variables
+### Required Environment Variables
 ```bash
 export JWT_SECRET=<your-secret>
-export AWS_ACCESS_KEY=<your-key>
-export AWS_SECRET_KEY=<your-secret>
-export AWS_S3_BUCKET=delma-documents
+export AWS_ACCESS_KEY_ID=<your-key>
+export AWS_SECRET_ACCESS_KEY=<your-secret>
+export AWS_S3_BUCKET=delma-patient-documents
 export RAZORPAY_KEY_ID=<your-key>
 export RAZORPAY_KEY_SECRET=<your-secret>
+export RAZORPAY_WEBHOOK_SECRET=<your-secret>
+export GROQ_API_KEY=<your-groq-key>
+export MAIL_USERNAME=<your-gmail>
+export MAIL_PASSWORD=<gmail-app-password-no-spaces>
 ```
 
 ---
 
-## 12. Tech Stack
+## 13. Tech Stack
 
 ### Backend
 | Layer | Technology | Version |
@@ -1399,6 +1456,7 @@ export RAZORPAY_KEY_SECRET=<your-secret>
 | Database | PostgreSQL | 16 |
 | Caching | Redis | 7.x |
 | Messaging | Apache Kafka | 3.x |
+| Email | Spring Mail + Gmail SMTP | — |
 | Build | Maven (multi-module) | 3.13 |
 | Auth | JJWT (JSON Web Tokens) | 0.12.6 |
 
@@ -1409,46 +1467,66 @@ export RAZORPAY_KEY_SECRET=<your-secret>
 | Language | TypeScript |
 | State | Redux Toolkit |
 | Styling | Tailwind CSS + shadcn/ui |
-| Auth | Firebase + JWT cookies |
-| Hosting | Vercel |
+| HTTP | Axios with interceptors |
+| Hosting | Vercel (planned) |
+
+### DevOps
+| Tool | Purpose |
+|------|---------|
+| **Docker** | Containerization |
+| **Docker Compose** | Local orchestration |
+| **Docker Hub** | Image registry |
+| **GitHub Actions** | CI/CD pipeline |
+| **Docker Buildx** | Multi-arch builds (amd64 + arm64) |
 
 ### External Services
 | Service | Purpose |
 |---------|---------|
 | **AWS S3** | Medical document storage with presigned URLs |
 | **ZEGOCLOUD** | Video calls with AES-256 encryption |
-| **Razorpay** | Payment gateway (orders, webhooks, refunds) |
+| **Razorpay** | Payment gateway (orders, signature verification, refunds) |
+| **Groq AI** | LLM inference (Llama 3.1) for symptom checker |
+| **Gmail SMTP** | OTP email delivery |
 
 ---
 
-## 13. Future Roadmap
+## 14. Future Roadmap
 
 ### Short-term Improvements
-- [ ] Fix double-booking race condition (optimistic locking on `DoctorSlot`)
+- [x] ~~Fix double-booking race condition (optimistic locking on `DoctorSlot`)~~ ✅ Done
+- [x] ~~AI Symptom Checker (Groq + Llama 3.1)~~ ✅ Done
+- [x] ~~Email OTP verification~~ ✅ Done
+- [x] ~~Dockerize all services~~ ✅ Done
+- [x] ~~CI/CD pipeline (GitHub Actions)~~ ✅ Done
+- [ ] Scheduled cleanup of unverified users (delete `is_verified=false` users older than 24h)
+- [ ] Google OAuth integration
 - [ ] Apply ApiResponse + exception handling pattern to remaining services
 - [ ] Add Redis caching to product listings
 - [ ] Add rate limiting on `/auth/login` to prevent brute force
 
 ### AI Features (planned)
-- [ ] **Symptom Checker** — Claude API suggests doctor specialization from user input
+- [x] ~~**Symptom Checker** — Groq AI suggests doctor specialization from user input~~ ✅ Done
 - [ ] **Document Summarizer** — Auto-summarize uploaded medical documents for doctors before video call
 - [ ] **Post-Consultation Notes** — AI-generated structured summary after video call
 - [ ] **Smart Doctor Recommendations** — Rank doctors based on user history + ratings
 
 ### Production Readiness
+- [x] ~~Dockerize all services~~ ✅ Done
+- [x] ~~CI/CD pipeline (GitHub Actions)~~ ✅ Done
+- [ ] AWS EC2 deployment with public URL
 - [ ] Centralized config (Spring Cloud Config Server)
 - [ ] Distributed tracing (Zipkin / OpenTelemetry)
 - [ ] Centralized logging (ELK stack)
-- [ ] Dockerize all services
 - [ ] Kubernetes deployment manifests
-- [ ] CI/CD pipeline (GitHub Actions)
 - [ ] Multi-instance deployment for horizontal scaling
+- [ ] Architecture diagram with live URL in README
 
 ### Resume-Worthy Metrics (to add when production data exists)
 - Concurrent users supported
 - p99 latency under load
 - Cache hit rate
 - Number of services running
+- AI inference latency (Groq currently sub-second)
 
 ---
 
