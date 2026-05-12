@@ -115,6 +115,7 @@ public class DocumentServiceImpl implements DocumentService {
 
     private DocumentResponse toResponse(Document doc){
         return DocumentResponse.builder()
+                .id(doc.getId())
                 .userId(doc.getUserId())
                 .url(doc.getUrl())
                 .name(doc.getName())
