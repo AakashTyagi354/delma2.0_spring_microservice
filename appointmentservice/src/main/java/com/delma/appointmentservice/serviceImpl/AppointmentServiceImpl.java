@@ -25,6 +25,7 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 
 @Slf4j
@@ -148,8 +149,47 @@ public class AppointmentServiceImpl implements AppointmentService {
                 .doctorId(as.getDoctorId())
                 .slotId(as.getSlotId())
                 .status(as.getStatus())
+                .createdAt(as.getCreatedAt())
                 .build();
     }
 
 
+}
+class TrieNode{
+    HashMap<Character,TrieNode> children = new HashMap<>();
+    boolean isEnd = false;
+    TrieNode root;
+    TrieNode(){
+        root = new TrieNode();
+    }
+    public void insert(String word){
+        TrieNode curr = root;
+        for(int i = 0;i<word.length();i++){
+            char ch = word.charAt(i);
+            if(!curr.children.containsKey(ch)){
+                curr.children.put(ch,new TrieNode());
+            }
+            curr = curr.children.get(ch);
+        }
+        curr.isEnd = true;
+    }
+
+    public boolean search(String word){
+        TrieNode curr = root;
+        for(int i = 0;i<word.length();i++){
+            char ch = word.charAt(i);
+            if(!curr.children.containsKey(ch)) return false;
+            curr = curr.children.get(ch);
+        }
+        return curr.isEnd;
+    }
+    public boolean startsWith(String word){
+        TrieNode curr = root;
+        for(int i = 0;i<word.length();i++){
+            char ch = word.charAt(i);
+            if(!curr.children.containsKey(ch)) return false;
+            curr = curr.children.get(ch);
+        }
+        return true;
+    }
 }

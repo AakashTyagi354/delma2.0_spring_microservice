@@ -6,11 +6,13 @@ import com.delma.paymentservice.dto.PaymentRequest;
 import com.delma.paymentservice.dto.ValidateDto;
 import com.delma.paymentservice.service.PaymentService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.Map;
 
+
+@Slf4j
 @RestController
 @RequestMapping("/api/v1/payments")
 @RequiredArgsConstructor
@@ -26,6 +28,8 @@ public class PaymentController {
 
     @PostMapping("/verify")
     public ResponseEntity<ApiResponse<Void>> verify(@RequestBody ValidateDto req) {
+        log.info("Verify request — orderId: {}, paymentId: {}, signature: {}",
+                req.getOrderId(), req.getPaymentId(), req.getSignature());
         boolean isValid = paymentService.verifySignature(
                 req.getOrderId(),
                 req.getPaymentId(),

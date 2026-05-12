@@ -38,12 +38,12 @@ spring:
 aws:
   s3:
     bucket:
-      name:  delma-patient-documents
+      name:  ${AWS_S3_BUCKET_DOCUMENTS}
     access:
       key:  ${AWS_ACCESS_KEY_ID}
     secret:
       key:  ${AWS_SECRET_ACCESS_KEY}
-    region: eu-north-1
+    region: ${AWS_S3_REGION:ap-south-1}
 
 eureka:
   client:
@@ -55,5 +55,5 @@ eureka:
     prefer-ip-address: true       # use IP address instead of hostname
 
 jwt:
-  secret: Z0ZqQm1nQ0tZQ1N2R3p3VjVnQ0hFZ3pMZ1R2aD...
+  secret: ${JWT_SECRET}
 
