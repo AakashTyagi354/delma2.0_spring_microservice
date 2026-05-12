@@ -10,6 +10,7 @@ target/
 **/src/main/resources/application.yml
 !aiservice/src/main/resources/application.yml
 !gateway/src/main/resources/application.yml
+!paymentservice/src/main/resources/application.yml
 
 ### STS ###
 .apt_generated
