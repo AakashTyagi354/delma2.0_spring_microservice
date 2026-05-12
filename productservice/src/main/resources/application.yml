@@ -9,7 +9,7 @@ spring:
   application:
     name: productservice
   datasource:
-    url: jdbc:postgresql://localhost:5432/product_db
+    url: jdbc:postgresql://localhost:5432/delma_product_db
     username: postgres
     password: postgres
     driver-class-name: org.postgresql.Driver
@@ -32,9 +32,9 @@ aws:
     bucket:
       name:  ${AWS_S3_BUCKET_IMAGES}
     access:
-      key:  ${AWS_ACCESS_KEY_ID}
+      key:  ${AWS_ACCESS_KEY}
     secret:
-      key:  ${AWS_SECRET_ACCESS_KEY}
+      key:  ${AWS_SECRET_KEY}
     region: ${AWS_S3_REGION:ap-south-1}
 
 
