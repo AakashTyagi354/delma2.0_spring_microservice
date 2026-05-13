@@ -145,6 +145,19 @@ public class AppointmentServiceImpl implements AppointmentService {
     private AppointmentResponse toResponse(Appointment as){
         DoctorSlot slot = slotRepository.findById(as.getSlotId()).orElse(null);
 
+        LocalDateTime slotStartTime = null;
+        LocalDateTime slotEndTime = null;
+
+        if (slot != null && slot.getDate() != null) {
+            if (slot.getStartTime() != null) {
+                // Fix: combine LocalDate + LocalTime → LocalDateTime
+                slotStartTime = LocalDateTime.of(slot.getDate(), slot.getStartTime());
+            }
+            if (slot.getEndTime() != null) {
+                slotEndTime = LocalDateTime.of(slot.getDate(), slot.getEndTime());
+            }
+        }
+
         return AppointmentResponse.builder()
                 .id(as.getId())
                 .userId(as.getUserId())
@@ -152,8 +165,8 @@ public class AppointmentServiceImpl implements AppointmentService {
                 .slotId(as.getSlotId())
                 .status(as.getStatus())
                 .createdAt(as.getCreatedAt())
-                .slotStartTime(slot != null ? LocalDateTime.from(slot.getStartTime()) : null) // ← add
-                .slotEndTime(slot != null ? LocalDateTime.from(slot.getEndTime()) : null)
+                .slotStartTime(slotStartTime)
+                .slotEndTime(slotEndTime)
                 .build();
     }
 
