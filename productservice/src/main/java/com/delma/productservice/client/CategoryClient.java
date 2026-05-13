@@ -7,7 +7,7 @@ import org.springframework.web.bind.annotation.RequestHeader;
 
 import java.util.UUID;
 
-@FeignClient(name = "categoryservice", url = "http://localhost:8015")
+@FeignClient(name = "categoryservice")
 public interface CategoryClient {
 
     @GetMapping("/api/v1/category/{slug}")
