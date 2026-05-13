@@ -15,5 +15,7 @@ public class AppointmentResponse {
     private Long doctorId;
     private Long slotId;
     private LocalDateTime createdAt;
+    private LocalDateTime slotStartTime;  // ← add
+    private LocalDateTime slotEndTime;
     private AppointmentStatus status;
 }

@@ -2,7 +2,7 @@ package com.delma.appointmentservice.entity;
 
 import com.delma.appointmentservice.utility.SlotStatus;
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
+        import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -29,6 +29,7 @@ public class DoctorSlot {
 
     @Enumerated(EnumType.STRING)
     private SlotStatus status;
+
 
     @Version
     private Long version;

@@ -143,6 +143,8 @@ public class AppointmentServiceImpl implements AppointmentService {
     }
 
     private AppointmentResponse toResponse(Appointment as){
+        DoctorSlot slot = slotRepository.findById(as.getSlotId()).orElse(null);
+
         return AppointmentResponse.builder()
                 .id(as.getId())
                 .userId(as.getUserId())
@@ -150,46 +152,10 @@ public class AppointmentServiceImpl implements AppointmentService {
                 .slotId(as.getSlotId())
                 .status(as.getStatus())
                 .createdAt(as.getCreatedAt())
+                .slotStartTime(slot != null ? LocalDateTime.from(slot.getStartTime()) : null) // ← add
+                .slotEndTime(slot != null ? LocalDateTime.from(slot.getEndTime()) : null)
                 .build();
     }
 
 
-}
-class TrieNode{
-    HashMap<Character,TrieNode> children = new HashMap<>();
-    boolean isEnd = false;
-    TrieNode root;
-    TrieNode(){
-        root = new TrieNode();
-    }
-    public void insert(String word){
-        TrieNode curr = root;
-        for(int i = 0;i<word.length();i++){
-            char ch = word.charAt(i);
-            if(!curr.children.containsKey(ch)){
-                curr.children.put(ch,new TrieNode());
-            }
-            curr = curr.children.get(ch);
-        }
-        curr.isEnd = true;
-    }
-
-    public boolean search(String word){
-        TrieNode curr = root;
-        for(int i = 0;i<word.length();i++){
-            char ch = word.charAt(i);
-            if(!curr.children.containsKey(ch)) return false;
-            curr = curr.children.get(ch);
-        }
-        return curr.isEnd;
-    }
-    public boolean startsWith(String word){
-        TrieNode curr = root;
-        for(int i = 0;i<word.length();i++){
-            char ch = word.charAt(i);
-            if(!curr.children.containsKey(ch)) return false;
-            curr = curr.children.get(ch);
-        }
-        return true;
-    }
 }
