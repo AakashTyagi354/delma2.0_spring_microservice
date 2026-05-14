@@ -83,7 +83,20 @@ public class AppointmentServiceImpl implements AppointmentService {
 
     public List<AppointmentResponse> getAppointmentsForUser(Long userId) {
         return appointmentRepository.findByUserId(userId).stream()
-                .map(this::toResponse)
+                .map(as -> {
+                    // Auto-complete past appointments
+                    DoctorSlot slot = slotRepository.findById(as.getSlotId()).orElse(null);
+                    if (slot != null && as.getStatus() == AppointmentStatus.BOOKED) {
+                        LocalDateTime endTime = LocalDateTime.of(
+                                slot.getDate(), slot.getEndTime()
+                        );
+                        if (endTime.isBefore(LocalDateTime.now())) {
+                            as.setStatus(AppointmentStatus.COMPLETED);
+                            appointmentRepository.save(as);
+                        }
+                    }
+                    return toResponse(as);
+                })
                 .toList();
     }
 
@@ -124,9 +137,20 @@ public class AppointmentServiceImpl implements AppointmentService {
 
     @Override
     public List<AppointmentResponse> getAppointmentForDoctors(Long doctorId) {
-        return appointmentRepository.findByDoctorIdAndStatus(doctorId,AppointmentStatus.BOOKED)
-                .stream()
-                .map(this::toResponse)
+        return appointmentRepository.findByDoctorId(doctorId).stream()
+                .map(as -> {
+                    DoctorSlot slot = slotRepository.findById(as.getSlotId()).orElse(null);
+                    if (slot != null && as.getStatus() == AppointmentStatus.BOOKED) {
+                        LocalDateTime endTime = LocalDateTime.of(
+                                slot.getDate(), slot.getEndTime()
+                        );
+                        if (endTime.isBefore(LocalDateTime.now())) {
+                            as.setStatus(AppointmentStatus.COMPLETED);
+                            appointmentRepository.save(as);
+                        }
+                    }
+                    return toResponse(as);
+                })
                 .toList();
     }
 

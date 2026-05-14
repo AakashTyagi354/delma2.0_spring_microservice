@@ -46,9 +46,9 @@ eureka:
 # ZegoCloud Credentials from Console
 zego:
   app:
-    id: 1506574501
+    id: 1279735084
   server:
-    secret: 209edc4cb781449de8fce91e57d34536
+    secret: 6f22bc87b40a151b0f1283e7d570a10f
 
 
 jwt:

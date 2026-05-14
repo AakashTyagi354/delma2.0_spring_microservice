@@ -5,21 +5,52 @@ spring:
   application:
     name: aiservice
 
+  # ── Database — delma_ai_db for pgvector embeddings ──
+  datasource:
+    url: jdbc:postgresql://${DB_HOST:localhost}:5432/delma_ai_db
+    username: postgres
+    password: postgres
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: validate   # ← validate only — table already created by init.sql
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+
+  # ── Kafka consumer ──
+  kafka:
+    bootstrap-servers: ${SPRING_KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    consumer:
+      group-id: aiservice-rag-group
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      properties:
+        spring.json.trusted.packages: "*"
+        spring.json.value.default.type: "com.delma.aiservice.kafka.DocumentUploadedEvent"
+        spring.json.use.type.headers: falsedocker-compose stop aiservice
+
+# ── AWS S3 — to download PDFs for indexing ──
+aws:
+  s3:
+    bucket:
+      name: ${AWS_S3_BUCKET_DOCUMENTS}
+    access:
+      key: ${AWS_ACCESS_KEY}
+    secret:
+      key: ${AWS_SECRET_KEY}
+    region: ${AWS_S3_REGION:ap-south-1}
+
 eureka:
   client:
     service-url:
-      defaultZone: http://discovery-server:8761/eureka/
+      defaultZone: ${EUREKA_CLIENT_SERVICEURL_DEFAULTZONE:http://localhost:8761/eureka/}
   instance:
     prefer-ip-address: true
 
----
-spring:
-  config:
-    activate:
-      on-profile: local
-
-eureka:
-  client:
-    enabled: false
-    register-with-eureka: false
-    fetch-registry: false
+# ── Groq API ──
+GROQ_API_KEY: ${GROQ_API_KEY}
+GROQ_API_URL: https://api.groq.com/openai/v1/chat/completions
+GROQ_API_MODEL: llama-3.1-8b-instant

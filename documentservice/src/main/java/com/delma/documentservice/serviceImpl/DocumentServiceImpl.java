@@ -2,6 +2,8 @@ package com.delma.documentservice.serviceImpl;
 
 import com.delma.common.exception.ResourceNotFoundException;
 import com.delma.documentservice.entity.Document;
+import com.delma.documentservice.kafka.DocumentEventProducer;
+import com.delma.documentservice.kafka.DocumentUploadedEvent;
 import com.delma.documentservice.repository.DocumentRepository;
 import com.delma.documentservice.response.DocumentResponse;
 import com.delma.documentservice.service.DocumentService;
@@ -32,6 +34,7 @@ import java.util.List;
 public class DocumentServiceImpl implements DocumentService {
 
     private final DocumentRepository documentRepository;
+    private final DocumentEventProducer documentEventProducer;
     private final Path storageLocation = Paths.get("uploaded-files");
 
     private final S3Client s3Client;
@@ -90,6 +93,20 @@ public class DocumentServiceImpl implements DocumentService {
                 .build();
 
         Document newDocument = documentRepository.save(doc);
+
+        // kafka call for AI indexing
+        if("application/pdf".equals(file.getContentType())){
+            DocumentUploadedEvent event = new DocumentUploadedEvent(
+                    newDocument.getId(),
+                    userId,
+                    fileName,
+                    file.getOriginalFilename(),
+                    file.getContentType()
+            );
+            documentEventProducer.publish(event);
+            log.info("Published document-uploaded event for documentId: {}",
+                    newDocument.getId());
+        }
         return toResponse(newDocument);
 
     }
