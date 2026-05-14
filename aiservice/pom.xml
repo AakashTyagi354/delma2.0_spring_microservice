@@ -13,6 +13,43 @@
     <name>AI Service</name>
 
     <dependencies>
+        <!-- Kafka consumer -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-kafka</artifactId>
+        </dependency>
+
+        <!-- JPA + PostgreSQL — to save embeddings -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-data-jpa</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.postgresql</groupId>
+            <artifactId>postgresql</artifactId>
+            <scope>runtime</scope>
+        </dependency>
+
+<!--        &lt;!&ndash; pgvector JDBC type support &ndash;&gt;-->
+<!--        <dependency>-->
+<!--            <groupId>com.pgvector</groupId>-->
+<!--            <artifactId>pgvector</artifactId>-->
+<!--            <version>0.1.6</version>-->
+<!--        </dependency>-->
+
+        <!-- PDF text extraction -->
+        <dependency>
+            <groupId>org.apache.pdfbox</groupId>
+            <artifactId>pdfbox</artifactId>
+            <version>3.0.1</version>
+        </dependency>
+
+        <!-- AWS S3 — download PDFs -->
+        <dependency>
+            <groupId>software.amazon.awssdk</groupId>
+            <artifactId>s3</artifactId>
+            <version>2.20.26</version>
+        </dependency>
         <!-- Web -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
