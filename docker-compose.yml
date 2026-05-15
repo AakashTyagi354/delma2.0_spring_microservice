@@ -301,7 +301,7 @@ services:
       - JWT_SECRET=${JWT_SECRET}
       - GROQ_API_KEY=${GROQ_API_KEY}
       - GROQ_API_URL=https://api.groq.com/openai/v1/chat/completions
-      - GROQ_API_MODEL=llama-3.1-8b-instant
+      - GROQ_API_MODEL=llama-3.3-70b-versatile
       - SPRING_KAFKA_BOOTSTRAP_SERVERS=kafka:9092
       - AWS_ACCESS_KEY=${AWS_ACCESS_KEY}
       - AWS_SECRET_KEY=${AWS_SECRET_KEY}
