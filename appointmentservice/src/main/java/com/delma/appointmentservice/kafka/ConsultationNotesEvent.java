@@ -13,7 +13,7 @@ import java.util.List;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class ConsultationNotesProducer {
+public class ConsultationNotesEvent {
     private Long notesId;
     private Long appointmentId;
     private Long patientId;

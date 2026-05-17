@@ -37,7 +37,7 @@ spring:
             - id: appointmentservice
               uri: lb://appointmentservice
               predicates:
-                - Path=/api/v1/slots/**,/api/v1/appointments/**
+                - Path=/api/v1/slots/**,/api/v1/appointments/**,/api/v1/consultation-notes/**
             - id: categoryservice
               uri: lb://categoryservice
               predicates:
