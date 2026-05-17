@@ -4,9 +4,7 @@ package com.delma.aiservice.agent.feign;
 import com.delma.common.dto.ApiResponse;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.format.annotation.DateTimeFormat;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -29,5 +27,11 @@ public interface AppointmentClient {
     @GetMapping("/api/v1/appointments/user")
     ApiResponse<List<Map<String, Object>>> getUserAppointments(
             @RequestParam("userId") Long userId);
+
+    @PutMapping("/api/v1/consultation-notes/{notesId}/ai-report")
+    ApiResponse<Void> updateAiReport(
+            @PathVariable("notesId") Long notesId,
+            @RequestBody String aiReport
+    );
 
 }

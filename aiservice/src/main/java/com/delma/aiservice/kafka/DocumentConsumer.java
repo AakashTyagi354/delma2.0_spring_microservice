@@ -15,7 +15,8 @@ public class DocumentConsumer {
 
     @KafkaListener(
             topics = "document-uploaded",
-            groupId = "aiservice-rag-group"
+            groupId = "aiservice-rag-group",
+            containerFactory = "documentKafkaListenerContainerFactory"
     )
     public void consume(DocumentUploadedEvent event){
         log.info("Received document-uploaded event for documentId: {}",

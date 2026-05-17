@@ -27,7 +27,6 @@ spring:
       value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
       properties:
         spring.json.trusted.packages: "*"
-        spring.json.value.default.type: "com.delma.aiservice.kafka.DocumentUploadedEvent"
         spring.json.use.type.headers: false
 
   # ── Redis — slot session storage for agent ──
