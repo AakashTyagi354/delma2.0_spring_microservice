@@ -1636,3 +1636,12 @@ Full Stack Engineer · Specialist Programmer at Infosys
 [GitHub](https://github.com/AakashTyagi354) · [LinkedIn](https://linkedin.com/in/aakashtyagi354)
 
 Building production-grade microservices and AI features for healthcare. Open to discussing architecture, agentic AI patterns, and backend systems.
+
+## Observability Setup
+
+Download OpenTelemetry agent before building:
+```bash
+mkdir -p agents
+curl -L https://github.com/open-telemetry/opentelemetry-java-instrumentation/releases/download/v2.3.0/opentelemetry-javaagent.jar \
+  -o agents/opentelemetry-javaagent.jar
+```

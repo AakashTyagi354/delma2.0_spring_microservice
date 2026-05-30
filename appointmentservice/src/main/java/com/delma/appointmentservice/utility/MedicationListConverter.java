@@ -14,28 +14,28 @@ public class MedicationListConverter implements AttributeConverter<List<Medicati
     private static final ObjectMapper mapper = new ObjectMapper();
 
     @Override
-    public String convertToDatabaseColumn(List<MedicationRecord> list){
-        try{
-            if(list == null || list.isEmpty()) return "[]";
+    public String convertToDatabaseColumn(List<MedicationRecord> list) {
+        try {
+            if (list == null || list.isEmpty()) return "[]";
             return mapper.writeValueAsString(list);
-        }catch (Exception e){
+        } catch (Exception e) {
             return "[]";
         }
     }
 
 
-
     @Override
     public List<MedicationRecord> convertToEntityAttribute(String json) {
         try {
-            if(json == null || json.isBlank()) return new ArrayList<>();
+            if (json == null || json.isBlank()) return new ArrayList<>();
             return mapper.readValue(
                     json,
                     mapper.getTypeFactory()
                             .constructCollectionType(List.class, MedicationRecord.class)
             );
-        }catch(Exception e){
+        } catch (Exception e) {
             return new ArrayList<>();
         }
     }
 }
+

@@ -1,5 +1,9 @@
 FROM eclipse-temurin:21-jre
 WORKDIR /app
-COPY target/paymentservice-0.0.1-SNAPSHOT.jar app.jar
+COPY agents/opentelemetry-javaagent.jar opentelemetry-javaagent.jar
+COPY paymentservice/target/paymentservice-0.0.1-SNAPSHOT.jar app.jar
+RUN mkdir -p logs
 EXPOSE 8083
-ENTRYPOINT ["java","-jar","app.jar"]
+ENTRYPOINT ["java", \
+  "-javaagent:opentelemetry-javaagent.jar", \
+  "-jar", "app.jar"]

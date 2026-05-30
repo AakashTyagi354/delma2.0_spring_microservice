@@ -5,17 +5,22 @@
 server:
   port: 8010
 
+
+
 management:
   endpoints:
     web:
       exposure:
-        include: "*"
+        include: health,info,prometheus,metrics
   endpoint:
     health:
       show-details: always
-  health:
-    circuitbreakers:
-      enabled: true
+  metrics:
+    tags:
+      application: ${spring.application.name}
+  tracing:
+    sampling:
+      probability: 1.0
 
 spring:
   data:

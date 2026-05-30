@@ -42,3 +42,5 @@ build/
 .vscode/
 logs/
 .env
+.idea/
+agents/

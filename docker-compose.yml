@@ -80,7 +80,7 @@ services:
     networks:
       - delma-network
     healthcheck:
-      test: [ "CMD-SHELL", "curl -f http://localhost:8761/actuator/health || exit 1" ]
+      test: ["CMD-SHELL", "curl -f http://localhost:8761/actuator/health || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 5
@@ -92,6 +92,8 @@ services:
     container_name: userservice
     ports:
       - "8111:8111"
+    volumes:
+      - ./logs:/app/logs
     environment:
       - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/delma_user_db
       - SPRING_DATASOURCE_USERNAME=postgres
@@ -101,6 +103,13 @@ services:
       - JWT_SECRET=${JWT_SECRET}
       - SPRING_MAIL_USERNAME=${MAIL_USERNAME}
       - SPRING_MAIL_PASSWORD=${MAIL_PASSWORD}
+      # ── observability ──────────────────────────────────────
+      - OTEL_SERVICE_NAME=userservice
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://tempo:4317
+      - OTEL_EXPORTER_OTLP_PROTOCOL=grpc
+      - OTEL_METRICS_EXPORTER=none
+      - OTEL_LOGS_EXPORTER=none
+      - OTEL_PROPAGATORS=tracecontext,baggage
     depends_on:
       postgres:
         condition: service_healthy
@@ -116,6 +125,8 @@ services:
     container_name: doctorservice
     ports:
       - "8010:8010"
+    volumes:
+      - ./logs:/app/logs
     environment:
       - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/delma_doctor_db
       - SPRING_DATASOURCE_USERNAME=postgres
@@ -125,6 +136,13 @@ services:
       - SPRING_DATA_REDIS_HOST=redis
       - SPRING_DATA_REDIS_PORT=6379
       - JWT_SECRET=${JWT_SECRET}
+      # ── observability ──────────────────────────────────────
+      - OTEL_SERVICE_NAME=doctorservice
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://tempo:4317
+      - OTEL_EXPORTER_OTLP_PROTOCOL=grpc
+      - OTEL_METRICS_EXPORTER=none
+      - OTEL_LOGS_EXPORTER=none
+      - OTEL_PROPAGATORS=tracecontext,baggage
     depends_on:
       postgres:
         condition: service_healthy
@@ -142,6 +160,8 @@ services:
     container_name: appointmentservice
     ports:
       - "8012:8012"
+    volumes:
+      - ./logs:/app/logs
     environment:
       - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/delma_appointment_db
       - SPRING_DATASOURCE_USERNAME=postgres
@@ -149,6 +169,13 @@ services:
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://discovery-server:8761/eureka/
       - SPRING_KAFKA_BOOTSTRAP_SERVERS=kafka:9092
       - JWT_SECRET=${JWT_SECRET}
+      # ── observability ──────────────────────────────────────
+      - OTEL_SERVICE_NAME=appointmentservice
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://tempo:4317
+      - OTEL_EXPORTER_OTLP_PROTOCOL=grpc
+      - OTEL_METRICS_EXPORTER=none
+      - OTEL_LOGS_EXPORTER=none
+      - OTEL_PROPAGATORS=tracecontext,baggage
     depends_on:
       postgres:
         condition: service_healthy
@@ -164,6 +191,8 @@ services:
     container_name: paymentservice
     ports:
       - "8083:8083"
+    volumes:
+      - ./logs:/app/logs
     environment:
       - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/delma_payment_db
       - SPRING_DATASOURCE_USERNAME=postgres
@@ -173,6 +202,13 @@ services:
       - RAZORPAY_KEY_ID=${RAZORPAY_KEY_ID}
       - RAZORPAY_KEY_SECRET=${RAZORPAY_KEY_SECRET}
       - RAZORPAY_WEBHOOK_SECRET=${RAZORPAY_WEBHOOK_SECRET}
+      # ── observability ──────────────────────────────────────
+      - OTEL_SERVICE_NAME=paymentservice
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://tempo:4317
+      - OTEL_EXPORTER_OTLP_PROTOCOL=grpc
+      - OTEL_METRICS_EXPORTER=none
+      - OTEL_LOGS_EXPORTER=none
+      - OTEL_PROPAGATORS=tracecontext,baggage
     depends_on:
       postgres:
         condition: service_healthy
@@ -186,6 +222,8 @@ services:
     container_name: documentservice
     ports:
       - "8091:8091"
+    volumes:
+      - ./logs:/app/logs
     environment:
       - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/delma_document_db
       - SPRING_DATASOURCE_USERNAME=postgres
@@ -197,6 +235,13 @@ services:
       - AWS_S3_BUCKET_DOCUMENTS=${AWS_S3_BUCKET_DOCUMENTS}
       - JWT_SECRET=${JWT_SECRET}
       - AWS_S3_REGION=${AWS_S3_REGION}
+      # ── observability ──────────────────────────────────────
+      - OTEL_SERVICE_NAME=documentservice
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://tempo:4317
+      - OTEL_EXPORTER_OTLP_PROTOCOL=grpc
+      - OTEL_METRICS_EXPORTER=none
+      - OTEL_LOGS_EXPORTER=none
+      - OTEL_PROPAGATORS=tracecontext,baggage
     depends_on:
       postgres:
         condition: service_healthy
@@ -210,6 +255,8 @@ services:
     container_name: notificationservice
     ports:
       - "8017:8017"
+    volumes:
+      - ./logs:/app/logs
     environment:
       - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/delma_notification_db
       - SPRING_DATASOURCE_USERNAME=postgres
@@ -217,6 +264,13 @@ services:
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://discovery-server:8761/eureka/
       - SPRING_KAFKA_BOOTSTRAP_SERVERS=kafka:9092
       - JWT_SECRET=${JWT_SECRET}
+      # ── observability ──────────────────────────────────────
+      - OTEL_SERVICE_NAME=notificationservice
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://tempo:4317
+      - OTEL_EXPORTER_OTLP_PROTOCOL=grpc
+      - OTEL_METRICS_EXPORTER=none
+      - OTEL_LOGS_EXPORTER=none
+      - OTEL_PROPAGATORS=tracecontext,baggage
     depends_on:
       postgres:
         condition: service_healthy
@@ -232,6 +286,8 @@ services:
     container_name: productservice
     ports:
       - "8016:8016"
+    volumes:
+      - ./logs:/app/logs
     environment:
       - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/delma_product_db
       - SPRING_DATASOURCE_USERNAME=postgres
@@ -242,6 +298,13 @@ services:
       - AWS_SECRET_KEY=${AWS_SECRET_KEY}
       - AWS_S3_BUCKET_IMAGES=${AWS_S3_BUCKET_IMAGES}
       - AWS_S3_REGION=${AWS_S3_REGION}
+      # ── observability ──────────────────────────────────────
+      - OTEL_SERVICE_NAME=productservice
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://tempo:4317
+      - OTEL_EXPORTER_OTLP_PROTOCOL=grpc
+      - OTEL_METRICS_EXPORTER=none
+      - OTEL_LOGS_EXPORTER=none
+      - OTEL_PROPAGATORS=tracecontext,baggage
     depends_on:
       postgres:
         condition: service_healthy
@@ -255,12 +318,21 @@ services:
     container_name: categoryservice
     ports:
       - "8015:8015"
+    volumes:
+      - ./logs:/app/logs
     environment:
       - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/delma_category_db
       - SPRING_DATASOURCE_USERNAME=postgres
       - SPRING_DATASOURCE_PASSWORD=postgres
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://discovery-server:8761/eureka/
       - JWT_SECRET=${JWT_SECRET}
+      # ── observability ──────────────────────────────────────
+      - OTEL_SERVICE_NAME=categoryservice
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://tempo:4317
+      - OTEL_EXPORTER_OTLP_PROTOCOL=grpc
+      - OTEL_METRICS_EXPORTER=none
+      - OTEL_LOGS_EXPORTER=none
+      - OTEL_PROPAGATORS=tracecontext,baggage
     depends_on:
       postgres:
         condition: service_healthy
@@ -274,12 +346,21 @@ services:
     container_name: orderservice
     ports:
       - "8013:8013"
+    volumes:
+      - ./logs:/app/logs
     environment:
       - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/delma_order_db
       - SPRING_DATASOURCE_USERNAME=postgres
       - SPRING_DATASOURCE_PASSWORD=postgres
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://discovery-server:8761/eureka/
       - JWT_SECRET=${JWT_SECRET}
+      # ── observability ──────────────────────────────────────
+      - OTEL_SERVICE_NAME=orderservice
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://tempo:4317
+      - OTEL_EXPORTER_OTLP_PROTOCOL=grpc
+      - OTEL_METRICS_EXPORTER=none
+      - OTEL_LOGS_EXPORTER=none
+      - OTEL_PROPAGATORS=tracecontext,baggage
     depends_on:
       postgres:
         condition: service_healthy
@@ -293,6 +374,8 @@ services:
     container_name: aiservice
     ports:
       - "8095:8095"
+    volumes:
+      - ./logs:/app/logs
     environment:
       - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/delma_ai_db
       - SPRING_DATASOURCE_USERNAME=postgres
@@ -309,8 +392,15 @@ services:
       - AWS_S3_REGION=${AWS_S3_REGION}
       - VOYAGE_API_KEY=${VOYAGE_API_KEY}
       - REDIS_HOST=redis
+      # ── observability ──────────────────────────────────────
+      - OTEL_SERVICE_NAME=aiservice
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://tempo:4317
+      - OTEL_EXPORTER_OTLP_PROTOCOL=grpc
+      - OTEL_METRICS_EXPORTER=none
+      - OTEL_LOGS_EXPORTER=none
+      - OTEL_PROPAGATORS=tracecontext,baggage
     networks:
-      - delma-network    # ← add this
+      - delma-network
     depends_on:
       discovery-server:
         condition: service_healthy
@@ -319,21 +409,113 @@ services:
       postgres:
         condition: service_healthy
 
-
   # ── GATEWAY (starts last) ────────────────────────────────────
   gateway:
     image: aakash354/delma-gateway:latest
     container_name: gateway
     ports:
       - "8089:8089"
+    volumes:
+      - ./logs:/app/logs
     environment:
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://discovery-server:8761/eureka/
       - JWT_SECRET=${JWT_SECRET}
+      # ── observability ──────────────────────────────────────
+      - OTEL_SERVICE_NAME=gateway
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://tempo:4317
+      - OTEL_EXPORTER_OTLP_PROTOCOL=grpc
+      - OTEL_METRICS_EXPORTER=none
+      - OTEL_LOGS_EXPORTER=none
+      - OTEL_PROPAGATORS=tracecontext,baggage
     depends_on:
       discovery-server:
         condition: service_healthy
     networks:
       - delma-network
 
+  # ── OBSERVABILITY ────────────────────────────────────────────
+
+  prometheus:
+    image: prom/prometheus:v2.51.0
+    container_name: prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./observability/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.retention.time=15d'
+      - '--web.enable-lifecycle'
+    networks:
+      - delma-network
+    restart: unless-stopped
+
+  loki:
+    image: grafana/loki:2.9.0
+    container_name: loki
+    ports:
+      - "3100:3100"
+    volumes:
+      - ./observability/loki/loki-config.yml:/etc/loki/local-config.yaml
+      - loki_data:/loki
+    command: -config.file=/etc/loki/local-config.yaml
+    networks:
+      - delma-network
+    restart: unless-stopped
+
+  tempo:
+    image: grafana/tempo:2.4.0
+    container_name: tempo
+    ports:
+      - "3200:3200"
+      - "4317:4317"
+      - "4318:4318"
+    volumes:
+      - ./observability/tempo/tempo-config.yml:/etc/tempo.yaml
+      - tempo_data:/tmp/tempo
+    command: -config.file=/etc/tempo.yaml
+    networks:
+      - delma-network
+    restart: unless-stopped
+
+  promtail:
+    image: grafana/promtail:2.9.0
+    container_name: promtail
+    volumes:
+      - ./observability/promtail/promtail-config.yml:/etc/promtail/config.yml
+      - ./logs:/app/logs:ro
+    command: -config.file=/etc/promtail/config.yml
+    networks:
+      - delma-network
+    restart: unless-stopped
+    depends_on:
+      - loki
+
+  grafana:
+    image: grafana/grafana:10.4.0
+    container_name: grafana
+    ports:
+      - "3002:3000"
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=delma123
+      - GF_USERS_ALLOW_SIGN_UP=false
+      - GF_FEATURE_TOGGLES_ENABLE=traceqlEditor
+    volumes:
+      - ./observability/grafana/provisioning:/etc/grafana/provisioning
+      - grafana_data:/var/lib/grafana
+    networks:
+      - delma-network
+    restart: unless-stopped
+    depends_on:
+      - prometheus
+      - loki
+      - tempo
+
 volumes:
   postgres-data:
+  prometheus_data:
+  loki_data:
+  tempo_data:
+  grafana_data:

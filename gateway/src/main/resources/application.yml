@@ -80,20 +80,29 @@ eureka:
 
 
 management:
-  server:
-    port: 9090
   endpoints:
     web:
       exposure:
-        include: health,info,gateway
+        include: health,info,prometheus,metrics
   endpoint:
     health:
       show-details: always
+  metrics:
+    tags:
+      application: gateway
+  tracing:
+    sampling:
+      probability: 1.0
+
+logging:
+  file:
+    name: logs/gateway.log
+  logback:
+    rollingpolicy:
+      max-history: 7
+
+
 
 jwt:
   secret: Z0ZqQm1nQ0tZQ1N2R3p3VjVnQ0hFZ3pMZ1R2aD...
 
-logging:
-  level:
-    org.springframework.cloud.gateway: DEBUG
-    org.springframework.cloud.loadbalancer: DEBUG

@@ -35,6 +35,22 @@ spring:
       host: ${REDIS_HOST:redis}
       port: 6379
 
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus,metrics
+  endpoint:
+    health:
+      show-details: always
+  metrics:
+    tags:
+      application: ${spring.application.name}
+  tracing:
+    sampling:
+      probability: 1.0
+
+
 aws:
   s3:
     bucket:

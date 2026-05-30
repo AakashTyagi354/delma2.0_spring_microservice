@@ -2,6 +2,10 @@
 
 FROM eclipse-temurin:21-jre
 WORKDIR /app
-COPY target/doctorservice-0.0.1-SNAPSHOT.jar app.jar
+COPY agents/opentelemetry-javaagent.jar opentelemetry-javaagent.jar
+COPY doctorservice/target/doctorservice-0.0.1-SNAPSHOT.jar app.jar
+RUN mkdir -p logs
 EXPOSE 8010
-ENTRYPOINT ["java","-jar","app.jar"]
+ENTRYPOINT ["java", \
+  "-javaagent:opentelemetry-javaagent.jar", \
+  "-jar", "app.jar"]
