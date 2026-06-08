@@ -13,6 +13,7 @@ import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.GetObjectRequest;
 import software.amazon.awssdk.services.s3.model.GetObjectResponse;
 
+import java.io.IOException;
 import java.util.List;
 
 
@@ -30,7 +31,7 @@ public class RagIndexingService {
     @Value("${aws.s3.bucket.name}")
     private String bucketName;
 
-    public void indexDocument(DocumentUploadedEvent event) throws Exception{
+    public void indexDocument(DocumentUploadedEvent event){
         log.info("Starting RAG indexing for documentId: {}", event.getDocumentId());
         // 1. download pdf from s3
 
@@ -38,7 +39,12 @@ public class RagIndexingService {
         log.info("Downloaded PDF from S3: {} bytes", pdfBytes.length);
 
         // 2. Extract text
-        String text = pdfTextExtractor.extract(pdfBytes);
+        String text = null;
+        try {
+            text = pdfTextExtractor.extract(pdfBytes);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
         if(text.isBlank()){
             log.warn("No text extracted from documentId: {}. Skipping.",
                     event.getDocumentId());

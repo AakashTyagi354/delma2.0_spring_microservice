@@ -5,6 +5,8 @@ import com.delma.aiservice.rag.RagIndexingService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.kafka.annotation.KafkaListener;
+import org.springframework.kafka.support.KafkaHeaders;
+import org.springframework.messaging.handler.annotation.Header;
 import org.springframework.stereotype.Component;
 
 @Slf4j
@@ -27,13 +29,30 @@ public class DocumentConsumer {
             return;
         }
 
-        try {
             ragIndexingService.indexDocument(event);
-        } catch (Exception e) {
-            log.error("Failed to index documentId: {}. Error: {}",
-                    event.getDocumentId(), e.getMessage(), e);
-            // Don't rethrow — let Kafka commit the offset
-            // Failed indexing should not block other events
-        }
+        log.info("Successfully indexed documentId: {}", event.getDocumentId());
+    }
+    @KafkaListener(
+            topics = "document-uploaded.DLT",
+            groupId = "aiservice-rag-dlt-group"
+    )
+    public void handleDlt(
+            DocumentUploadedEvent event,
+            @Header(KafkaHeaders.RECEIVED_TOPIC) String topic,
+            @Header(name = "kafka_dlt-exception-fqcn",
+                    required = false) String exceptionClass,
+            @Header(name = "kafka_dlt-exception-message",
+                    required = false) String errorMessage
+    ) {
+        log.error(
+                "DLT — document indexing failed all retries | " +
+                        "documentId: {} | fileName: {} | exception: {} | reason: {}",
+                event.getDocumentId(),
+                event.getFileName(),
+                exceptionClass,
+                errorMessage
+        );
+        // TODO: Save to failed_documents table for manual replay
+        // TODO: Alert engineering team
     }
 }

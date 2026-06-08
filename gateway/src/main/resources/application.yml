@@ -2,6 +2,16 @@ server:
   port: 8089
 
 spring:
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:}
+      lettuce:
+        pool:
+          max-active: 8
+          max-idle: 8
+          min-idle: 2
   main:
     web-application-type: reactive
   application:
@@ -78,6 +88,29 @@ eureka:
   instance:
     prefer-ip-address: true
 
+rate-limiting:
+  enabled: true
+  routes:
+    - path: /api/v1/ai/**
+      limit: 10
+      window-seconds: 60
+      key-by: USER_ID
+    - path: /api/v1/payments/**
+      limit: 5
+      window-seconds: 60
+      key-by: USER_ID
+    - path: /auth/login
+      limit: 5
+      window-seconds: 60
+      key-by: IP
+    - path: /auth/resend-otp
+      limit: 3
+      window-seconds: 60
+      key-by: IP
+    - path: /**
+      limit: 100
+      window-seconds: 60
+      key-by: USER_ID
 
 management:
   endpoints:

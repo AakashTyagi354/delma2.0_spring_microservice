@@ -23,6 +23,8 @@ import com.delma.aiservice.service.ConsultationAiService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.kafka.annotation.KafkaListener;
+import org.springframework.kafka.support.KafkaHeaders;
+import org.springframework.messaging.handler.annotation.Header;
 import org.springframework.stereotype.Component;
 
 @Slf4j
@@ -39,19 +41,32 @@ public class ConsultationNotesConsumer {
         public void consume(ConsultationNotesEvent event){
             log.info("Received consultation-notes-ready for notesId: {}",
                     event.getNotesId());
-            try{
+
                 consultationAiService.processNotes(event);
 
-            }catch(Exception e){
-                // Swallow — never block Kafka offset commit
-                // Notes are already saved — AI is enhancement not blocker
-                //If you throw the error, your service will retrying processing that exact same
-                // orrupted message over and over again.
-//                The Consequences: Because Kafka processes a partition sequentially, all subsequent patient summaries behind this one in the
-//                queue are blocked. Your entire AI service freezes, waiting for a broken message to succeed.
-                log.error("Failed to process consultation notes for notesId: {}. " +
-                        "Error: {}", event.getNotesId(), e.getMessage());
-            }
+            log.info("AI report generated for notesId: {}", event.getNotesId());
         }
-
+    @KafkaListener(
+            topics = "consultation-notes-ready.DLT",
+            groupId = "aiservice-consultation-dlt-group"
+    )
+    public void handleDlt(
+            ConsultationNotesEvent event,
+            @Header(KafkaHeaders.RECEIVED_TOPIC) String topic,
+            @Header(name = "kafka_dlt-exception-fqcn",
+                    required = false) String exceptionClass,
+            @Header(name = "kafka_dlt-exception-message",
+                    required = false) String errorMessage
+    ) {
+        log.error(
+                "DLT — consultation AI report failed all retries | " +
+                        "notesId: {} | appointmentId: {} | exception: {} | reason: {}",
+                event.getNotesId(),
+                event.getAppointmentId(),
+                exceptionClass,
+                errorMessage
+        );
+        // TODO: Notify patient their AI report is delayed
+        // TODO: Save to failed_consultations table for manual replay
+    }
 }

@@ -77,6 +77,12 @@ public class NotificationServiceImpl implements NotificationService {
     @Override
     @Transactional
     public void createFromEvent(NotificationEvent event) {
+        if (event.getUserId() == null || event.getUserId().isBlank()) {
+            throw new IllegalArgumentException(
+                    "NotificationEvent has null/blank userId. " +
+                            "Event: " + event
+            );
+        }
 
         Notification notification = new Notification();
         notification.setUserId(event.getUserId());
