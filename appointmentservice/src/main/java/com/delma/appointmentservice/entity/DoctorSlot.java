@@ -12,6 +12,16 @@ import java.time.LocalTime;
 
 @Entity
 @Data
+@Table(
+        name = "doctor_slot",
+        indexes = {
+                @Index(
+                        name = "idx_slot_doctor_date_status",
+                        columnList = "doctor_id, date, status"
+                )
+
+        }
+)
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder

@@ -58,6 +58,9 @@ eureka:
   instance:
     prefer-ip-address: true       # use IP address instead of hostname
 
+logging:
+  level:
+    org.hibernate.SQL: DEBUG
 # ZegoCloud Credentials from Console
 zego:
   app:

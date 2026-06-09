@@ -24,9 +24,8 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -69,7 +68,7 @@ public class AppointmentServiceImpl implements AppointmentService {
         );
         notificationProducer.send(event);
 
-        return toResponse(bookedAppointmnet);
+        return toResponse(bookedAppointmnet,slot);
     }
 
 
@@ -82,22 +81,37 @@ public class AppointmentServiceImpl implements AppointmentService {
     }
 
     public List<AppointmentResponse> getAppointmentsForUser(Long userId) {
-        return appointmentRepository.findByUserId(userId).stream()
-                .map(as -> {
-                    // Auto-complete past appointments
-                    DoctorSlot slot = slotRepository.findById(as.getSlotId()).orElse(null);
-                    if (slot != null && as.getStatus() == AppointmentStatus.BOOKED) {
-                        LocalDateTime endTime = LocalDateTime.of(
-                                slot.getDate(), slot.getEndTime()
+        List<Appointment> appointments = appointmentRepository.findByUserId(userId);
+        if(appointments.isEmpty()) return List.of();
+
+        List<Long> slotIds = appointments.stream()
+                .map(Appointment::getSlotId)
+                .distinct()
+                .toList();
+
+        Map<Long,DoctorSlot> slotMap = slotRepository.findAllById(slotIds)
+                .stream()
+                .collect(Collectors.toMap(DoctorSlot::getId,slot -> slot));
+
+        List<Appointment> toUpdate  = new ArrayList<>();
+        List<AppointmentResponse> responses = appointments.stream()
+                .map(appointment -> {
+                    DoctorSlot slot = slotMap.get(appointment.getSlotId());
+                    if(slot != null &&
+                        appointment.getStatus() == AppointmentStatus.BOOKED
+                    ){
+                        LocalDateTime endTime =  LocalDateTime.of(
+                                slot.getDate(),slot.getEndTime()
                         );
-                        if (endTime.isBefore(LocalDateTime.now())) {
-                            as.setStatus(AppointmentStatus.COMPLETED);
-                            appointmentRepository.save(as);
+                        if(endTime.isBefore(LocalDateTime.now())){
+                            appointment.setStatus(AppointmentStatus.COMPLETED);
+                            toUpdate.add(appointment);
                         }
                     }
-                    return toResponse(as);
-                })
-                .toList();
+                    return toResponse(appointment,slot);
+                }).toList();
+        if(!toUpdate.isEmpty()) appointmentRepository.saveAll(toUpdate);
+        return responses;
     }
 
 
@@ -108,20 +122,10 @@ public class AppointmentServiceImpl implements AppointmentService {
         Appointment appt = appointmentRepository.findById(appointmentId).orElseThrow(() -> new ResourceNotFoundException("Appointment not found for userId: " +userId ));
 
 
-//        if(roles.contains("DOCTOR") && !appt.getDoctorId().equals(userId)){
-//            throw new RuntimeException("Unauthorized: User does not have access to this appointment.");
-//        }else (roles.contains("USER") && !appt.getUserId().equals(userId)){
-//            throw new RuntimeException("Unauthorized: User does not have access to this appointment.");
-//        }
-
-
-
         try{
-            // Inside your Service method
             log.info("aapID: {} and secret: {}",appId,serverSecret);
             String rawToken04 = ZegoTokenUtils.generateToken04(appId, userId, serverSecret, 3600, String.valueOf(appointmentId));
 
-// This is what you actually return to your Frontend
             String finalTokenForFrontend = ZegoTokenUtils.makeKitToken(appId, String.valueOf(appointmentId), rawToken04);
 
             return finalTokenForFrontend;
@@ -137,21 +141,41 @@ public class AppointmentServiceImpl implements AppointmentService {
 
     @Override
     public List<AppointmentResponse> getAppointmentForDoctors(Long doctorId) {
-        return appointmentRepository.findByDoctorId(doctorId).stream()
-                .map(as -> {
-                    DoctorSlot slot = slotRepository.findById(as.getSlotId()).orElse(null);
-                    if (slot != null && as.getStatus() == AppointmentStatus.BOOKED) {
+        List<Appointment> appointments = appointmentRepository.findByDoctorId(doctorId);
+        if (appointments.isEmpty()) return List.of();
+
+        List<Long> slotIds = appointments.stream()
+                .map(Appointment::getSlotId)
+                .distinct()
+                .toList();
+
+        Map<Long, DoctorSlot> slotMap = slotRepository.findAllById(slotIds)
+                .stream()
+                .collect(Collectors.toMap(DoctorSlot::getId, slot -> slot));
+
+        List<Appointment> toUpdate = new ArrayList<>();
+
+        List<AppointmentResponse> responses = appointments.stream()
+                .map(appointment -> {
+                    DoctorSlot slot = slotMap.get(appointment.getSlotId());
+
+                    if (slot != null && appointment.getStatus() == AppointmentStatus.BOOKED) {
                         LocalDateTime endTime = LocalDateTime.of(
-                                slot.getDate(), slot.getEndTime()
-                        );
+                                slot.getDate(), slot.getEndTime());
                         if (endTime.isBefore(LocalDateTime.now())) {
-                            as.setStatus(AppointmentStatus.COMPLETED);
-                            appointmentRepository.save(as);
+                            appointment.setStatus(AppointmentStatus.COMPLETED);
+                            toUpdate.add(appointment);
                         }
                     }
-                    return toResponse(as);
+                    return toResponse(appointment, slot);
                 })
                 .toList();
+
+        if (!toUpdate.isEmpty()) {
+            appointmentRepository.saveAll(toUpdate);
+        }
+
+        return responses;
     }
 
     private DoctorSlotResponse toResponse(DoctorSlot ds){
@@ -166,8 +190,8 @@ public class AppointmentServiceImpl implements AppointmentService {
 
     }
 
-    private AppointmentResponse toResponse(Appointment as){
-        DoctorSlot slot = slotRepository.findById(as.getSlotId()).orElse(null);
+    private AppointmentResponse toResponse(Appointment as,DoctorSlot slot){
+
 
         LocalDateTime slotStartTime = null;
         LocalDateTime slotEndTime = null;
