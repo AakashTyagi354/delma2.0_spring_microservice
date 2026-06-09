@@ -24,6 +24,30 @@ services:
       timeout: 5s
       retries: 5
 
+  # ── APPOINTMENT READ REPLICA ─────────────────────────────────
+  # Option B: separate postgres container for appointmentservice reads
+  # Same image as primary — Hibernate ddl-auto creates schema on startup
+  # No streaming replication — demonstrates routing mechanism
+  # In production: replace with actual streaming replica
+  postgres-replica:
+    image: pgvector/pgvector:pg16
+    container_name: postgres-replica
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: delma_appointment_db
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres-replica-data:/var/lib/postgresql/data
+    networks:
+      - delma-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
   redis:
     image: redis:7
     container_name: redis
@@ -103,7 +127,6 @@ services:
       - JWT_SECRET=${JWT_SECRET}
       - SPRING_MAIL_USERNAME=${MAIL_USERNAME}
       - SPRING_MAIL_PASSWORD=${MAIL_PASSWORD}
-      # ── observability ──────────────────────────────────────
       - OTEL_SERVICE_NAME=userservice
       - OTEL_EXPORTER_OTLP_ENDPOINT=http://tempo:4317
       - OTEL_EXPORTER_OTLP_PROTOCOL=grpc
@@ -136,7 +159,6 @@ services:
       - SPRING_DATA_REDIS_HOST=redis
       - SPRING_DATA_REDIS_PORT=6379
       - JWT_SECRET=${JWT_SECRET}
-      # ── observability ──────────────────────────────────────
       - OTEL_SERVICE_NAME=doctorservice
       - OTEL_EXPORTER_OTLP_ENDPOINT=http://tempo:4317
       - OTEL_EXPORTER_OTLP_PROTOCOL=grpc
@@ -163,13 +185,24 @@ services:
     volumes:
       - ./logs:/app/logs
     environment:
-      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/delma_appointment_db
-      - SPRING_DATASOURCE_USERNAME=postgres
-      - SPRING_DATASOURCE_PASSWORD=postgres
+      # ── PRIMARY datasource — all writes go here ──────────────
+      # Property name matches spring.datasource.primary.* in application.yml
+      # Spring Boot maps SPRING_DATASOURCE_PRIMARY_JDBC_URL
+      # → spring.datasource.primary.jdbc-url automatically
+      - SPRING_DATASOURCE_PRIMARY_JDBC_URL=jdbc:postgresql://postgres:5432/delma_appointment_db
+      - SPRING_DATASOURCE_PRIMARY_USERNAME=postgres
+      - SPRING_DATASOURCE_PRIMARY_PASSWORD=postgres
+
+      # ── REPLICA datasource — all reads go here ───────────────
+      # Points to postgres-replica container on port 5433
+      # Hibernate creates schema here on startup via ddl-auto: update
+      - SPRING_DATASOURCE_REPLICA_JDBC_URL=jdbc:postgresql://postgres-replica:5432/delma_appointment_db
+      - SPRING_DATASOURCE_REPLICA_USERNAME=postgres
+      - SPRING_DATASOURCE_REPLICA_PASSWORD=postgres
+
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://discovery-server:8761/eureka/
       - SPRING_KAFKA_BOOTSTRAP_SERVERS=kafka:9092
       - JWT_SECRET=${JWT_SECRET}
-      # ── observability ──────────────────────────────────────
       - OTEL_SERVICE_NAME=appointmentservice
       - OTEL_EXPORTER_OTLP_ENDPOINT=http://tempo:4317
       - OTEL_EXPORTER_OTLP_PROTOCOL=grpc
@@ -178,6 +211,8 @@ services:
       - OTEL_PROPAGATORS=tracecontext,baggage
     depends_on:
       postgres:
+        condition: service_healthy
+      postgres-replica:
         condition: service_healthy
       discovery-server:
         condition: service_healthy
@@ -202,7 +237,6 @@ services:
       - RAZORPAY_KEY_ID=${RAZORPAY_KEY_ID}
       - RAZORPAY_KEY_SECRET=${RAZORPAY_KEY_SECRET}
       - RAZORPAY_WEBHOOK_SECRET=${RAZORPAY_WEBHOOK_SECRET}
-      # ── observability ──────────────────────────────────────
       - OTEL_SERVICE_NAME=paymentservice
       - OTEL_EXPORTER_OTLP_ENDPOINT=http://tempo:4317
       - OTEL_EXPORTER_OTLP_PROTOCOL=grpc
@@ -235,7 +269,6 @@ services:
       - AWS_S3_BUCKET_DOCUMENTS=${AWS_S3_BUCKET_DOCUMENTS}
       - JWT_SECRET=${JWT_SECRET}
       - AWS_S3_REGION=${AWS_S3_REGION}
-      # ── observability ──────────────────────────────────────
       - OTEL_SERVICE_NAME=documentservice
       - OTEL_EXPORTER_OTLP_ENDPOINT=http://tempo:4317
       - OTEL_EXPORTER_OTLP_PROTOCOL=grpc
@@ -264,7 +297,6 @@ services:
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://discovery-server:8761/eureka/
       - SPRING_KAFKA_BOOTSTRAP_SERVERS=kafka:9092
       - JWT_SECRET=${JWT_SECRET}
-      # ── observability ──────────────────────────────────────
       - OTEL_SERVICE_NAME=notificationservice
       - OTEL_EXPORTER_OTLP_ENDPOINT=http://tempo:4317
       - OTEL_EXPORTER_OTLP_PROTOCOL=grpc
@@ -298,7 +330,6 @@ services:
       - AWS_SECRET_KEY=${AWS_SECRET_KEY}
       - AWS_S3_BUCKET_IMAGES=${AWS_S3_BUCKET_IMAGES}
       - AWS_S3_REGION=${AWS_S3_REGION}
-      # ── observability ──────────────────────────────────────
       - OTEL_SERVICE_NAME=productservice
       - OTEL_EXPORTER_OTLP_ENDPOINT=http://tempo:4317
       - OTEL_EXPORTER_OTLP_PROTOCOL=grpc
@@ -326,7 +357,6 @@ services:
       - SPRING_DATASOURCE_PASSWORD=postgres
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://discovery-server:8761/eureka/
       - JWT_SECRET=${JWT_SECRET}
-      # ── observability ──────────────────────────────────────
       - OTEL_SERVICE_NAME=categoryservice
       - OTEL_EXPORTER_OTLP_ENDPOINT=http://tempo:4317
       - OTEL_EXPORTER_OTLP_PROTOCOL=grpc
@@ -354,7 +384,6 @@ services:
       - SPRING_DATASOURCE_PASSWORD=postgres
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://discovery-server:8761/eureka/
       - JWT_SECRET=${JWT_SECRET}
-      # ── observability ──────────────────────────────────────
       - OTEL_SERVICE_NAME=orderservice
       - OTEL_EXPORTER_OTLP_ENDPOINT=http://tempo:4317
       - OTEL_EXPORTER_OTLP_PROTOCOL=grpc
@@ -392,7 +421,6 @@ services:
       - AWS_S3_REGION=${AWS_S3_REGION}
       - VOYAGE_API_KEY=${VOYAGE_API_KEY}
       - REDIS_HOST=redis
-      # ── observability ──────────────────────────────────────
       - OTEL_SERVICE_NAME=aiservice
       - OTEL_EXPORTER_OTLP_ENDPOINT=http://tempo:4317
       - OTEL_EXPORTER_OTLP_PROTOCOL=grpc
@@ -409,7 +437,7 @@ services:
       postgres:
         condition: service_healthy
 
-  # ── GATEWAY (starts last) ────────────────────────────────────
+  # ── GATEWAY ──────────────────────────────────────────────────
   gateway:
     image: aakash354/delma-gateway:latest
     container_name: gateway
@@ -420,7 +448,6 @@ services:
     environment:
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://discovery-server:8761/eureka/
       - JWT_SECRET=${JWT_SECRET}
-      # ── observability ──────────────────────────────────────
       - OTEL_SERVICE_NAME=gateway
       - OTEL_EXPORTER_OTLP_ENDPOINT=http://tempo:4317
       - OTEL_EXPORTER_OTLP_PROTOCOL=grpc
@@ -436,7 +463,6 @@ services:
       - delma-network
 
   # ── OBSERVABILITY ────────────────────────────────────────────
-
   prometheus:
     image: prom/prometheus:v2.51.0
     container_name: prometheus
@@ -517,6 +543,7 @@ services:
 
 volumes:
   postgres-data:
+  postgres-replica-data:
   prometheus_data:
   loki_data:
   tempo_data:

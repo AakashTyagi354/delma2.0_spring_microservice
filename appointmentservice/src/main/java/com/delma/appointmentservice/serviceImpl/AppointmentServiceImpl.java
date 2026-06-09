@@ -15,12 +15,13 @@ import com.delma.appointmentservice.utility.ZegoTokenUtils;
 import com.delma.common.exception.BadRequestException;
 import com.delma.common.exception.ConflictException;
 import com.delma.common.exception.ResourceNotFoundException;
-import jakarta.transaction.Transactional;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -39,7 +40,7 @@ public class AppointmentServiceImpl implements AppointmentService {
     @Value("${zego.server.secret}") private String serverSecret;
 
     @Override
-    @Transactional
+   @Transactional
     public AppointmentResponse bookAppointment(Long userId, Long doctorId, Long slotId){
         DoctorSlot slot = slotRepository.findById(slotId)
                 .orElseThrow(() -> new ResourceNotFoundException("Slot not found for slotId: "+slotId));
@@ -71,7 +72,7 @@ public class AppointmentServiceImpl implements AppointmentService {
         return toResponse(bookedAppointmnet,slot);
     }
 
-
+    @Transactional(readOnly = true)
     public List<DoctorSlotResponse> getAvailableSlots(Long doctorId, LocalDate date) {
         log.info("Fetching available slots for doctorId: {} on date: {}", doctorId, date);
 
@@ -80,6 +81,7 @@ public class AppointmentServiceImpl implements AppointmentService {
                 .toList();
     }
 
+    @Transactional(readOnly = true)
     public List<AppointmentResponse> getAppointmentsForUser(Long userId) {
         List<Appointment> appointments = appointmentRepository.findByUserId(userId);
         if(appointments.isEmpty()) return List.of();
@@ -116,6 +118,7 @@ public class AppointmentServiceImpl implements AppointmentService {
 
 
     @Override
+    @Transactional(readOnly = true)
     public String getMeetingToken(Long appointmentId, String userId, String rolesHeaders) {
         log.info("Inside getMeethingToken userId: {} appoitmentId: {}, roles: {}",userId,appointmentId,rolesHeaders);
         List<String> roles = Arrays.asList(rolesHeaders.split(","));
@@ -140,6 +143,7 @@ public class AppointmentServiceImpl implements AppointmentService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<AppointmentResponse> getAppointmentForDoctors(Long doctorId) {
         List<Appointment> appointments = appointmentRepository.findByDoctorId(doctorId);
         if (appointments.isEmpty()) return List.of();
