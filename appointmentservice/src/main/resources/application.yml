@@ -5,6 +5,11 @@ spring:
   application:
     name: appointmentservice
 
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+
   kafka:
     bootstrap-servers: localhost:9092
     producer:

@@ -12,6 +12,7 @@ import com.delma.appointmentservice.service.AppointmentService;
 import com.delma.appointmentservice.utility.AppointmentStatus;
 import com.delma.appointmentservice.utility.SlotStatus;
 import com.delma.appointmentservice.utility.ZegoTokenUtils;
+import com.delma.appointmentservice.utils.DistributedLockService;
 import com.delma.common.exception.BadRequestException;
 import com.delma.common.exception.ConflictException;
 import com.delma.common.exception.ResourceNotFoundException;
@@ -35,6 +36,7 @@ public class AppointmentServiceImpl implements AppointmentService {
     private final AppointmentRepository appointmentRepository;
     private final DoctorSlotRepository slotRepository;
     private final NotificationProducer notificationProducer;
+    private final DistributedLockService lockService;
 
     @Value("${zego.app.id}") private long appId;
     @Value("${zego.server.secret}") private String serverSecret;
@@ -42,11 +44,21 @@ public class AppointmentServiceImpl implements AppointmentService {
     @Override
    @Transactional
     public AppointmentResponse bookAppointment(Long userId, Long doctorId, Long slotId){
-        DoctorSlot slot = slotRepository.findById(slotId)
-                .orElseThrow(() -> new ResourceNotFoundException("Slot not found for slotId: "+slotId));
+        // ── Acquire distributed lock BEFORE any DB operations ─────────────
+        String lockValue = lockService.tryAcquire(slotId);
+        if (lockValue == null) {
+            throw new ConflictException(
+                    "Slot " + slotId + " is currently being processed. " +
+                            "Please try again in a moment."
+            );
+        }
 
-        Boolean isBooked = appointmentRepository.existsByDoctorIdAndSlotIdAndStatus(doctorId,slotId, AppointmentStatus.BOOKED);
-        if(isBooked || slot.getStatus().equals(SlotStatus.BOOKED)) throw new ConflictException("Slot already booked");
+    try {
+        DoctorSlot slot = slotRepository.findById(slotId)
+                .orElseThrow(() -> new ResourceNotFoundException("Slot not found for slotId: " + slotId));
+
+        Boolean isBooked = appointmentRepository.existsByDoctorIdAndSlotIdAndStatus(doctorId, slotId, AppointmentStatus.BOOKED);
+        if (isBooked || slot.getStatus().equals(SlotStatus.BOOKED)) throw new ConflictException("Slot already booked");
 
         Appointment appointment = Appointment.builder()
                 .doctorId(doctorId)
@@ -69,7 +81,13 @@ public class AppointmentServiceImpl implements AppointmentService {
         );
         notificationProducer.send(event);
 
-        return toResponse(bookedAppointmnet,slot);
+        return toResponse(bookedAppointmnet, slot);
+    }   finally {
+
+        lockService.release(slotId, lockValue);
+        log.debug("Lock released for slotId: {}", slotId);
+
+        }
     }
 
     @Transactional(readOnly = true)
