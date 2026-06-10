@@ -1,10 +1,8 @@
 package com.delma.appointmentservice.datasource;
 
-
+import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.boot.context.properties.ConfigurationProperties;
-import org.springframework.boot.jdbc.DataSourceBuilder;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
@@ -15,36 +13,58 @@ import java.util.Map;
 @Configuration
 public class DataSourceConfig {
 
+    @Value("${spring.datasource.primary.jdbc-url}")
+    private String primaryUrl;
+
+    @Value("${spring.datasource.primary.username}")
+    private String primaryUsername;
+
+    @Value("${spring.datasource.primary.password}")
+    private String primaryPassword;
+
+    @Value("${spring.datasource.replica.jdbc-url}")
+    private String replicaUrl;
+
+    @Value("${spring.datasource.replica.username}")
+    private String replicaUsername;
+
+    @Value("${spring.datasource.replica.password}")
+    private String replicaPassword;
+
     @Bean(name = "primaryDataSource")
-    @ConfigurationProperties(prefix = "spring.datasource.primary")
-    public DataSource primaryDataSource(){
-        return DataSourceBuilder.create()
-                .type(HikariDataSource.class)
-                .build();
+    public DataSource primaryDataSource() {
+        HikariConfig config = new HikariConfig();
+        config.setJdbcUrl(primaryUrl);
+        config.setUsername(primaryUsername);
+        config.setPassword(primaryPassword);
+        config.setPoolName("PrimaryPool");
+        config.setMaximumPoolSize(10);
+        config.setMinimumIdle(2);
+        return new HikariDataSource(config);
     }
 
-    // Same for replica — reads spring.datasource.replica.*
     @Bean(name = "replicaDataSource")
-    @ConfigurationProperties(prefix = "spring.datasource.replica")
     public DataSource replicaDataSource() {
-        return DataSourceBuilder.create()
-                .type(HikariDataSource.class)
-                .build();
+        HikariConfig config = new HikariConfig();
+        config.setJdbcUrl(replicaUrl);
+        config.setUsername(replicaUsername);
+        config.setPassword(replicaPassword);
+        config.setPoolName("ReplicaPool");
+        config.setMaximumPoolSize(10);
+        config.setMinimumIdle(2);
+        return new HikariDataSource(config);
     }
 
     @Primary
-    @Bean(name = "routingDataSource")
-    public DataSource routingDataSource(
-            @Qualifier("primaryDataSource") DataSource primary,
-            @Qualifier("replicaDataSource") DataSource replica) {
+    @Bean(name = "dataSource")
+    public DataSource dataSource() {
         RoutingDataSource routing = new RoutingDataSource();
         routing.setTargetDataSources(Map.of(
-                DataSourceType.PRIMARY, primary,
-                DataSourceType.REPLICA, replica
+                DataSourceType.PRIMARY, primaryDataSource(),
+                DataSourceType.REPLICA, replicaDataSource()
         ));
-        routing.setDefaultTargetDataSource(primary);
+        routing.setDefaultTargetDataSource(primaryDataSource());
         routing.afterPropertiesSet();
-
         return routing;
     }
 }

@@ -4,6 +4,7 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.EnableAspectJAutoProxy;
 import org.springframework.scheduling.annotation.EnableScheduling;
+import org.springframework.transaction.annotation.EnableTransactionManagement;
 
 @SpringBootApplication(
         scanBasePackages = {
@@ -20,6 +21,7 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 )
 @EnableScheduling
 @EnableAspectJAutoProxy
+@EnableTransactionManagement(order = 2)
 public class AppointmentserviceApplication {
     public static void main(String[] args) {
         SpringApplication.run(AppointmentserviceApplication.class, args);
