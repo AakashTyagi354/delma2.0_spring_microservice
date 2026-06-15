@@ -47,3 +47,5 @@ agents/
 backend_context_v2.txt
 frontend_context_v2.txt
 *_context_v2.txt
+*_backend_snapshot.txt
+delma_*_snapshot.txt
