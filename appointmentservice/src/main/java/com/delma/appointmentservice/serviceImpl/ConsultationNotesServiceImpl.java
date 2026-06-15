@@ -5,15 +5,20 @@ import com.delma.appointmentservice.dto.DoctorConsultationView;
 import com.delma.appointmentservice.dto.PatientConsultationView;
 import com.delma.appointmentservice.entity.Appointment;
 import com.delma.appointmentservice.entity.ConsultationNotes;
+import com.delma.appointmentservice.entity.OutboxEvent;
+import com.delma.appointmentservice.kafka.ConsultationNotesEvent;
 import com.delma.appointmentservice.kafka.ConsultationNotesProducer;
 import com.delma.appointmentservice.repository.AppointmentRepository;
 import com.delma.appointmentservice.repository.ConsultationNotesRepository;
+import com.delma.appointmentservice.repository.OutboxRepository;
 import com.delma.appointmentservice.service.ConsultationNotesService;
 import com.delma.appointmentservice.utility.ConsultationStatus;
 import com.delma.common.exception.ResourceNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import tools.jackson.databind.ObjectMapper;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -26,7 +31,9 @@ public class ConsultationNotesServiceImpl implements ConsultationNotesService {
 
     private final ConsultationNotesRepository repository;
     private final ConsultationNotesProducer eventProducer;
-    private final AppointmentRepository appointmentRepository; // ← was missing
+    private final AppointmentRepository appointmentRepository;
+    private final OutboxRepository outboxRepository;
+    private final ObjectMapper objectMapper;
 
     @Override
     public DoctorConsultationView autoSave(ConsultationNotesRequest request) {
@@ -39,12 +46,37 @@ public class ConsultationNotesServiceImpl implements ConsultationNotesService {
     }
 
     @Override
+    @Transactional
     public DoctorConsultationView saveFinal(ConsultationNotesRequest request) {
         ConsultationNotes notes = findOrCreate(request);
         updateFields(notes, request);
         notes.setStatus(ConsultationStatus.SAVED);
         ConsultationNotes saved = repository.save(notes);
-        eventProducer.publishNotesReady(saved);
+
+        ConsultationNotesEvent event = ConsultationNotesEvent.builder()
+                .notesId(saved.getId())
+                .appointmentId(saved.getAppointmentId())
+                .patientId(saved.getPatientId())
+                .doctorId(saved.getDoctorId())
+                .chiefComplaint(saved.getChiefComplaint())
+                .diagnosis(saved.getDiagnosis())
+                .diagnosisCode(saved.getDiagnosisCode())
+                .vitals(saved.getVitals())
+                .medications(saved.getMedications())
+                .labTests(saved.getLabTests())
+                .instructions(saved.getInstructions())
+                .followUpDays(saved.getFollowUpDays())
+                .build();
+
+        OutboxEvent outboxEvent = OutboxEvent.builder()
+                .aggregateType("ConsultationNotes")
+                .aggregateId(saved.getId())
+                .eventType("ConsultationNotesReady")
+                .topic("consultation-notes-ready")
+                .payload(serialize(event))
+                .build();
+        outboxRepository.save(outboxEvent);
+
         log.info("Final save done, AI event published for appointmentId: {}",
                 request.getAppointmentId());
         return toDoctorView(saved);
@@ -161,5 +193,12 @@ public class ConsultationNotesServiceImpl implements ConsultationNotesService {
                 .status(n.getStatus().name())
                 .createdAt(n.getCreatedAt())
                 .build();
+    }
+    private String serialize(Object event) {
+        try {
+            return objectMapper.writeValueAsString(event);
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to serialize event", e);
+        }
     }
 }

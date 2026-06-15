@@ -3,10 +3,7 @@ package com.delma.appointmentservice.entity;
 
 import com.delma.appointmentservice.utility.AppointmentStatus;
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 import java.time.LocalDateTime;
 
@@ -21,10 +18,11 @@ import java.time.LocalDateTime;
             )
     }
 )
-@Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@Getter
+@Setter
 public class Appointment {
 
     @Id
@@ -39,4 +37,17 @@ public class Appointment {
     private AppointmentStatus status;
 
     private LocalDateTime createdAt;
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof Appointment)) return false;
+        Appointment that = (Appointment) o;
+        return id != null && id.equals(that.id);  // null guard here
+    }
+
+    @Override
+    public int hashCode() {
+        return getClass().hashCode();  // constant — never changes
+    }
 }
